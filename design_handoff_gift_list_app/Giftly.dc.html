@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes popIn { from { opacity:0; transform:scale(.96) translateY(4px); } to { opacity:1; transform:scale(1) translateY(0); } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+  * { box-sizing: border-box; }
+  body { margin:0; -webkit-tap-highlight-color: transparent; }
+  input, textarea, button { font-family: inherit; }
+  input:focus, textarea:focus { outline: none; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;width:100%;background:{{ theme.bg }};font-family:{{ theme.fontBody }};color:{{ theme.text }};display:flex;justify-content:center;">
+<div style="width:100%;max-width:480px;min-height:100vh;background:{{ theme.bg }};position:relative;display:flex;flex-direction:column;">
+
+<sc-if value="{{ isUserSelectStep }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;display:flex;flex-direction:column;padding:48px 24px 32px;animation:fadeUp .4s {{ theme.ease }};">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="width:44px;height:44px;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primary }};display:flex;align-items:center;justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"></path><path d="M2 7h20v5H2z"></path><path d="M12 22V7"></path><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+      </div>
+      <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:26px;letter-spacing:-0.02em;">Giftly</div>
+    </div>
+    <div style="color:{{ theme.textMuted }};font-size:15px;margin-bottom:28px;">Who's this?</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <sc-for list="{{ selectableUsers }}" as="u" hint-placeholder-count="6">
+        <div onClick="{{ u.onSelect }}" style="cursor:pointer;background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;padding:14px 16px;display:flex;align-items:center;gap:14px;box-shadow:{{ theme.shadow }};">
+          <div style="width:44px;height:44px;border-radius:999px;background:{{ u.color }};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0;">{{ u.initial }}</div>
+          <div style="flex:1;font-weight:700;font-size:15.5px;">{{ u.name }}</div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ theme.textMuted }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isPasswordStep }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 28px;animation:fadeUp .3s {{ theme.ease }};">
+    <button onClick="{{ backToUserSelect }}" style="align-self:flex-start;display:flex;align-items:center;gap:6px;border:none;background:transparent;color:{{ theme.textMuted }};font-size:13px;font-weight:600;cursor:pointer;padding:0;margin-bottom:22px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+      Not {{ loginUserName }}?
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+      <div style="width:48px;height:48px;border-radius:999px;background:{{ loginUserColor }};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0;">{{ loginUserInitial }}</div>
+      <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:22px;">Hi, {{ loginUserName }}</div>
+    </div>
+
+    <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;">Password</label>
+    <input type="password" placeholder="••••••••" value="{{ loginPassword }}" onChange="{{ onLoginPasswordChange }}" onKeyDown="{{ onLoginKeyDown }}" autoFocus="{{ true }}" style="width:100%;padding:14px 16px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:16px;margin-bottom:8px;background:{{ theme.surface }};color:{{ theme.text }};" />
+
+    <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
+      <div style="color:{{ theme.danger }};font-size:13px;margin-bottom:8px;">{{ loginError }}</div>
+    </sc-if>
+
+    <button onClick="{{ doLogin }}" style="margin-top:16px;width:100%;padding:15px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primary }};color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:{{ theme.shadowRaised }};">Sign in</button>
+
+    <div style="text-align:center;color:{{ theme.textMuted }};font-size:12px;margin-top:24px;">Demo password is <strong>gifts2026</strong>.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ showTopBar }}" hint-placeholder-val="{{ false }}">
+  <div style="position:sticky;top:0;z-index:5;background:{{ theme.headerBg }};color:{{ theme.headerText }};padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:{{ theme.headerShadow }};">
+    <sc-if value="{{ showBackButton }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ onBack }}" style="width:40px;height:40px;border-radius:999px;border:none;background:transparent;color:{{ theme.headerText }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+      </button>
+    </sc-if>
+    <div style="flex:1;min-width:0;">
+      <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:19px;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ headerTitle }}</div>
+      <sc-if value="{{ headerSubtitle }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12px;opacity:.75;">{{ headerSubtitle }}</div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ doLogout }}" style="width:40px;height:40px;border-radius:999px;border:none;background:transparent;color:{{ theme.headerText }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+      </button>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:20px 16px 100px;flex:1;animation:fadeUp .35s {{ theme.ease }};">
+    <div onClick="{{ onOpenMyList }}" style="cursor:pointer;background:{{ theme.primary }};border-radius:{{ theme.radiusCard }}px;padding:20px;color:#fff;display:flex;align-items:center;gap:14px;box-shadow:{{ theme.shadowRaised }};margin-bottom:24px;">
+      <div style="width:48px;height:48px;border-radius:{{ theme.radiusButton }}px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"></path><path d="M2 7h20v5H2z"></path><path d="M12 22V7"></path><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:17px;">My gift list</div>
+        <div style="font-size:13px;opacity:.85;margin-top:2px;">{{ myActiveCountLabel }}</div>
+      </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;color:{{ theme.textMuted }};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">Family</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <sc-for list="{{ familyMembers }}" as="m" hint-placeholder-count="5">
+        <div onClick="{{ m.onOpen }}" style="cursor:pointer;background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;padding:14px 16px;display:flex;align-items:center;gap:14px;box-shadow:{{ theme.shadow }};">
+          <div style="width:44px;height:44px;border-radius:999px;background:{{ m.color }};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0;">{{ m.initial }}</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:15px;">{{ m.name }}</div>
+            <div style="font-size:12.5px;color:{{ theme.textMuted }};margin-top:1px;">{{ m.countLabel }}</div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ theme.textMuted }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ isCurrentUserAdmin }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:13px;font-weight:700;color:{{ theme.textMuted }};text-transform:uppercase;letter-spacing:0.06em;margin:24px 0 12px;">Manage</div>
+      <div onClick="{{ onOpenAdmin }}" style="cursor:pointer;background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;padding:14px 16px;display:flex;align-items:center;gap:14px;box-shadow:{{ theme.shadow }};border:1.5px dashed {{ theme.border }};">
+        <div style="width:44px;height:44px;border-radius:999px;background:{{ theme.accentAmber }};display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"></path></svg>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;">Admin</div>
+          <div style="font-size:12.5px;color:{{ theme.textMuted }};margin-top:1px;">Manage family members</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ theme.textMuted }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isListEdit }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:16px 16px 120px;flex:1;animation:fadeUp .3s {{ theme.ease }};">
+    <sc-if value="{{ viaAdminBanner }}" hint-placeholder-val="{{ false }}">
+      <div style="background:{{ theme.accentAmberSoft }};color:{{ theme.accentAmberText }};border-radius:{{ theme.radiusInput }}px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;">Admin mode — you're editing someone else's list. You can't see who will receive which gift.</div>
+    </sc-if>
+    <button onClick="{{ openAddGift }}" style="width:100%;padding:14px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primarySoft }};color:{{ theme.primary }};font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+      Add a gift idea
+    </button>
+
+    <sc-if value="{{ listEditHasActive }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ listEditActive }}" as="g" hint-placeholder-count="3">
+          <div style="background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;box-shadow:{{ theme.shadow }};overflow:hidden;">
+            <sc-if value="{{ g.imageUrl }}" hint-placeholder-val="{{ false }}">
+              <img src="{{ g.imageUrl }}" style="width:100%;height:140px;object-fit:cover;display:block;" />
+            </sc-if>
+            <div style="padding:14px 16px;">
+              <div style="display:flex;justify-content:space-between;gap:10px;">
+                <div style="font-weight:700;font-size:16px;line-height:1.3;">{{ g.title }}</div>
+                <sc-if value="{{ g.priceLabel }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex-shrink:0;background:{{ theme.accentAmberSoft }};color:{{ theme.accentAmberText }};font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px;height:fit-content;">{{ g.priceLabel }}</div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ g.description }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:13.5px;color:{{ theme.textMuted }};margin-top:6px;line-height:1.5;">{{ g.description }}</div>
+              </sc-if>
+              <sc-if value="{{ g.hasLink }}" hint-placeholder-val="{{ false }}">
+                <a href="{{ g.link }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:{{ theme.primary }};margin-top:8px;text-decoration:underline;">View item
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"></path></svg>
+                </a>
+              </sc-if>
+              <sc-if value="{{ g.hasTags }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
+                  <sc-if value="{{ g.exactColor }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:700;background:{{ theme.accentVioletSoft }};color:{{ theme.accentVioletText }};padding:4px 9px;border-radius:999px;">Exact color</div></sc-if>
+                  <sc-if value="{{ g.exactProduct }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:700;background:{{ theme.accentVioletSoft }};color:{{ theme.accentVioletText }};padding:4px 9px;border-radius:999px;">Exact product</div></sc-if>
+                  <sc-if value="{{ g.repeatable }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:700;background:{{ theme.accentTealSoft }};color:{{ theme.accentTealText }};padding:4px 9px;border-radius:999px;">Can give more than once</div></sc-if>
+                  <sc-if value="{{ g.isReceived }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:700;background:{{ theme.accentGreenSoft }};color:{{ theme.accentGreenText }};padding:4px 9px;border-radius:999px;">Received</div></sc-if>
+                </div>
+              </sc-if>
+
+              <div style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+                <button onClick="{{ g.onMoveUp }}" disabled="{{ g.moveUpDisabled }}" style="width:36px;height:36px;border-radius:999px;border:1.5px solid {{ theme.border }};background:{{ theme.surface }};color:{{ theme.text }};display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:{{ g.moveUpOpacity }};">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"></path></svg>
+                </button>
+                <button onClick="{{ g.onMoveDown }}" disabled="{{ g.moveDownDisabled }}" style="width:36px;height:36px;border-radius:999px;border:1.5px solid {{ theme.border }};background:{{ theme.surface }};color:{{ theme.text }};display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:{{ g.moveDownOpacity }};">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+                </button>
+                <div style="flex:1;"></div>
+                <button onClick="{{ g.onEdit }}" style="width:36px;height:36px;border-radius:999px;border:none;background:{{ theme.primarySoft }};color:{{ theme.primary }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                </button>
+                <button onClick="{{ g.onMarkReceived }}" style="width:36px;height:36px;border-radius:999px;border:none;background:{{ theme.accentGreenSoft }};color:{{ theme.accentGreenText }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+                </button>
+                <button onClick="{{ g.onDelete }}" style="width:36px;height:36px;border-radius:999px;border:none;background:{{ theme.dangerSoft }};color:{{ theme.danger }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ listEditEmptyActive }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;color:{{ theme.textMuted }};font-size:14px;padding:40px 20px;">No gift ideas yet. Add the first one above.</div>
+    </sc-if>
+
+    <sc-if value="{{ listEditHasReceived }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:24px;">
+        <button onClick="{{ toggleShowReceived }}" style="width:100%;background:transparent;border:none;display:flex;align-items:center;justify-content:center;gap:6px;color:{{ theme.textMuted }};font-weight:700;font-size:13px;padding:10px;cursor:pointer;">
+          {{ showReceivedLabel }}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{ showReceived }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+            <sc-for list="{{ listEditReceived }}" as="g" hint-placeholder-count="2">
+              <div style="background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;box-shadow:{{ theme.shadow }};padding:14px 16px;opacity:0.6;display:flex;align-items:center;gap:12px;">
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:15px;text-decoration:line-through;">{{ g.title }}</div>
+                  <div style="font-size:12px;color:{{ theme.textMuted }};margin-top:2px;">Marked as received</div>
+                </div>
+                <button onClick="{{ g.onUnmarkReceived }}" style="font-size:12px;font-weight:700;color:{{ theme.primary }};background:{{ theme.primarySoft }};border:none;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;">Undo</button>
+                <button onClick="{{ g.onDelete }}" style="width:32px;height:32px;flex-shrink:0;border-radius:999px;border:none;background:{{ theme.dangerSoft }};color:{{ theme.danger }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                </button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isOtherList }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:16px 16px 120px;flex:1;animation:fadeUp .3s {{ theme.ease }};">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ otherActive }}" as="g" hint-placeholder-count="3">
+        <div style="background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;box-shadow:{{ theme.shadow }};overflow:hidden;opacity:{{ g.cardOpacity }};">
+          <sc-if value="{{ g.imageUrl }}" hint-placeholder-val="{{ false }}">
+            <img src="{{ g.imageUrl }}" style="width:100%;height:140px;object-fit:cover;display:block;" />
+          </sc-if>
+          <div style="padding:14px 16px;">
+            <div style="display:flex;justify-content:space-between;gap:10px;">
+              <div style="font-weight:700;font-size:16px;line-height:1.3;text-decoration:{{ g.titleDecoration }};">{{ g.title }}</div>
+              <sc-if value="{{ g.priceLabel }}" hint-placeholder-val="{{ false }}">
+                <div style="flex-shrink:0;background:{{ theme.accentAmberSoft }};color:{{ theme.accentAmberText }};font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px;height:fit-content;">{{ g.priceLabel }}</div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ g.description }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:13.5px;color:{{ theme.textMuted }};margin-top:6px;line-height:1.5;">{{ g.description }}</div>
+            </sc-if>
+            <sc-if value="{{ g.hasLink }}" hint-placeholder-val="{{ false }}">
+              <a href="{{ g.link }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:{{ theme.primary }};margin-top:8px;text-decoration:underline;">View item
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"></path></svg>
+              </a>
+            </sc-if>
+            <sc-if value="{{ g.hasTags }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
+                <sc-if value="{{ g.exactColor }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:700;background:{{ theme.accentVioletSoft }};color:{{ theme.accentVioletText }};padding:4px 9px;border-radius:999px;">Exact color</div></sc-if>
+                <sc-if value="{{ g.exactProduct }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:700;background:{{ theme.accentVioletSoft }};color:{{ theme.accentVioletText }};padding:4px 9px;border-radius:999px;">Exact product</div></sc-if>
+                <sc-if value="{{ g.repeatable }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:700;background:{{ theme.accentTealSoft }};color:{{ theme.accentTealText }};padding:4px 9px;border-radius:999px;">Can give more than once</div></sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ g.claimedByMe }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px;background:{{ theme.accentGreenSoft }};border-radius:{{ theme.radiusInput }}px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="font-size:13px;color:{{ theme.accentGreenText }};font-weight:700;">You're giving this · {{ g.claimDateLabel }}</div>
+                <button onClick="{{ g.onEditClaim }}" style="font-size:12px;font-weight:700;color:{{ theme.accentGreenText }};background:rgba(255,255,255,0.6);border:none;padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;">Edit</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ g.canClaim }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ g.onClaim }}" style="margin-top:12px;width:100%;padding:11px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primary }};color:#fff;font-weight:700;font-size:14px;cursor:pointer;">I'll get this one</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ otherEmptyActive }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;color:{{ theme.textMuted }};font-size:14px;padding:40px 20px;">Nothing left on this list right now.</div>
+    </sc-if>
+
+    <sc-if value="{{ otherHasReceived }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:24px;">
+        <button onClick="{{ toggleShowReceived }}" style="width:100%;background:transparent;border:none;display:flex;align-items:center;justify-content:center;gap:6px;color:{{ theme.textMuted }};font-weight:700;font-size:13px;padding:10px;cursor:pointer;">
+          {{ showReceivedLabel }}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{ showReceived }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+            <sc-for list="{{ otherReceived }}" as="g" hint-placeholder-count="2">
+              <div style="background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;box-shadow:{{ theme.shadow }};padding:14px 16px;opacity:0.6;">
+                <div style="font-weight:700;font-size:15px;text-decoration:line-through;">{{ g.title }}</div>
+                <div style="font-size:12px;color:{{ theme.textMuted }};margin-top:2px;">Received</div>
+                <sc-if value="{{ g.claimedByMe }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ g.onEditClaim }}" style="margin-top:8px;font-size:12px;font-weight:700;color:{{ theme.primary }};background:{{ theme.primarySoft }};border:none;padding:6px 10px;border-radius:999px;cursor:pointer;">You gave this — edit</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:16px 16px 120px;flex:1;animation:fadeUp .3s {{ theme.ease }};">
+    <button onClick="{{ openAddUser }}" style="width:100%;padding:14px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primarySoft }};color:{{ theme.primary }};font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+      Add family member
+    </button>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <sc-for list="{{ adminUsers }}" as="u" hint-placeholder-count="5">
+        <div style="background:{{ theme.surface }};border-radius:{{ theme.radiusCard }}px;padding:14px 16px;box-shadow:{{ theme.shadow }};">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:999px;background:{{ u.color }};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;flex-shrink:0;">{{ u.initial }}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:15px;">{{ u.name }}</div>
+              <sc-if value="{{ u.isAdmin }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:11.5px;font-weight:700;color:{{ theme.accentAmberText }};">Admin</div>
+              </sc-if>
+            </div>
+            <button onClick="{{ u.onEdit }}" style="width:34px;height:34px;border-radius:999px;border:none;background:{{ theme.primarySoft }};color:{{ theme.primary }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </button>
+            <button onClick="{{ u.onDelete }}" style="width:34px;height:34px;border-radius:999px;border:none;background:{{ theme.dangerSoft }};color:{{ theme.danger }};display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+            </button>
+          </div>
+          <button onClick="{{ u.onEditListRequest }}" style="margin-top:10px;width:100%;padding:9px;border-radius:{{ theme.radiusButton }}px;border:1.5px solid {{ theme.border }};background:transparent;color:{{ theme.text }};font-weight:600;font-size:13px;cursor:pointer;">View / edit their list</button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(15,17,30,0.5);display:flex;align-items:flex-end;justify-content:center;z-index:50;animation:fade .2s {{ theme.ease }};">
+    <div onClick="{{ stopProp }}" style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:{{ theme.surface }};border-radius:24px 24px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));animation:popIn .25s {{ theme.ease }};">
+
+      <sc-if value="{{ isGiftFormModal }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:19px;margin-bottom:18px;">{{ giftFormTitle }}</div>
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Title *</label>
+        <input type="text" placeholder="e.g. Wool socks" value="{{ draftTitle }}" onChange="{{ onDraftTitleChange }}" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:14px;background:{{ theme.bg }};color:{{ theme.text }};" />
+
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Link (optional)</label>
+        <input type="url" placeholder="https://..." value="{{ draftLink }}" onChange="{{ onDraftLinkChange }}" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:14px;background:{{ theme.bg }};color:{{ theme.text }};" />
+
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Price (optional)</label>
+        <input type="number" min="0" placeholder="e.g. 25" value="{{ draftPrice }}" onChange="{{ onDraftPriceChange }}" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:14px;background:{{ theme.bg }};color:{{ theme.text }};" />
+
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Notes (optional)</label>
+        <textarea placeholder="Any extra detail..." value="{{ draftDescription }}" onChange="{{ onDraftDescriptionChange }}" rows="3" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:16px;background:{{ theme.bg }};color:{{ theme.text }};resize:vertical;font-family:inherit;"></textarea>
+
+        <div onClick="{{ toggleDraftExactColor }}" style="display:flex;align-items:center;gap:12px;padding:12px 4px;cursor:pointer;">
+          <div style="width:22px;height:22px;border-radius:7px;border:2px solid {{ draftExactColorBorder }};background:{{ draftExactColorBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <sc-if value="{{ draftExactColor }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+          </div>
+          <div style="font-size:14.5px;">Must be this exact color</div>
+        </div>
+        <div onClick="{{ toggleDraftExactProduct }}" style="display:flex;align-items:center;gap:12px;padding:12px 4px;cursor:pointer;">
+          <div style="width:22px;height:22px;border-radius:7px;border:2px solid {{ draftExactProductBorder }};background:{{ draftExactProductBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <sc-if value="{{ draftExactProduct }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+          </div>
+          <div style="font-size:14.5px;">Must be this exact product / brand</div>
+        </div>
+        <div onClick="{{ toggleDraftOnlyOnce }}" style="display:flex;align-items:center;gap:12px;padding:12px 4px;cursor:pointer;">
+          <div style="width:22px;height:22px;border-radius:7px;border:2px solid {{ draftOnlyOnceBorder }};background:{{ draftOnlyOnceBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <sc-if value="{{ draftOnlyOnce }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+          </div>
+          <div style="font-size:14.5px;">Only give this once <span style="color:{{ theme.textMuted }};">(uncheck for things like socks)</span></div>
+        </div>
+
+        <sc-if value="{{ draftError }}" hint-placeholder-val="{{ false }}">
+          <div style="color:{{ theme.danger }};font-size:13px;margin-top:8px;">{{ draftError }}</div>
+        </sc-if>
+
+        <button onClick="{{ saveGiftForm }}" style="margin-top:18px;width:100%;padding:15px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primary }};color:#fff;font-size:15px;font-weight:700;cursor:pointer;">{{ giftFormSaveLabel }}</button>
+        <button onClick="{{ closeModal }}" style="margin-top:8px;width:100%;padding:13px;border:none;border-radius:{{ theme.radiusButton }}px;background:transparent;color:{{ theme.textMuted }};font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      </sc-if>
+
+      <sc-if value="{{ isClaimModal }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:19px;margin-bottom:6px;">{{ claimModalTitle }}</div>
+        <div style="font-size:13.5px;color:{{ theme.textMuted }};margin-bottom:18px;">Pick the day you plan to give this. It'll stay a secret until the day after.</div>
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Gift date</label>
+        <input type="date" value="{{ draftClaimDate }}" onChange="{{ onDraftClaimDateChange }}" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:16px;background:{{ theme.bg }};color:{{ theme.text }};" />
+        <sc-if value="{{ claimModalError }}" hint-placeholder-val="{{ false }}">
+          <div style="color:{{ theme.danger }};font-size:13px;margin-bottom:8px;">{{ claimModalError }}</div>
+        </sc-if>
+        <button onClick="{{ confirmClaim }}" style="width:100%;padding:15px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primary }};color:#fff;font-size:15px;font-weight:700;cursor:pointer;">{{ claimModalSaveLabel }}</button>
+        <sc-if value="{{ claimModalShowRemove }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ removeClaim }}" style="margin-top:8px;width:100%;padding:13px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.dangerSoft }};color:{{ theme.danger }};font-size:14px;font-weight:700;cursor:pointer;">I didn't give this after all</button>
+        </sc-if>
+        <button onClick="{{ closeModal }}" style="margin-top:8px;width:100%;padding:13px;border:none;border-radius:{{ theme.radiusButton }}px;background:transparent;color:{{ theme.textMuted }};font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      </sc-if>
+
+      <sc-if value="{{ isUserFormModal }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:19px;margin-bottom:18px;">{{ userFormTitle }}</div>
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Name</label>
+        <input type="text" value="{{ draftUserName }}" onChange="{{ onDraftUserNameChange }}" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:14px;background:{{ theme.bg }};color:{{ theme.text }};" />
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Password</label>
+        <input type="text" value="{{ draftUserPassword }}" onChange="{{ onDraftUserPasswordChange }}" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:14px;background:{{ theme.bg }};color:{{ theme.text }};" />
+        <div onClick="{{ toggleDraftUserAdmin }}" style="display:flex;align-items:center;gap:12px;padding:12px 4px;cursor:pointer;">
+          <div style="width:22px;height:22px;border-radius:7px;border:2px solid {{ draftUserAdminBorder }};background:{{ draftUserAdminBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <sc-if value="{{ draftUserAdmin }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+          </div>
+          <div style="font-size:14.5px;">Admin access</div>
+        </div>
+        <sc-if value="{{ userFormError }}" hint-placeholder-val="{{ false }}">
+          <div style="color:{{ theme.danger }};font-size:13px;margin-top:8px;">{{ userFormError }}</div>
+        </sc-if>
+        <button onClick="{{ saveUserForm }}" style="margin-top:18px;width:100%;padding:15px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primary }};color:#fff;font-size:15px;font-weight:700;cursor:pointer;">Save</button>
+        <button onClick="{{ closeModal }}" style="margin-top:8px;width:100%;padding:13px;border:none;border-radius:{{ theme.radiusButton }}px;background:transparent;color:{{ theme.textMuted }};font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      </sc-if>
+
+      <sc-if value="{{ isConfirmAdminEditModal }}" hint-placeholder-val="{{ false }}">
+        <div style="width:48px;height:48px;border-radius:999px;background:{{ theme.accentAmberSoft }};display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ theme.accentAmberText }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+        </div>
+        <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:19px;margin-bottom:8px;">Are you sure?</div>
+        <div style="font-size:14px;color:{{ theme.textMuted }};line-height:1.5;margin-bottom:20px;">You're about to view and edit <strong>{{ confirmAdminEditName }}</strong>'s list as admin. This could spoil a surprise if you're not careful.</div>
+        <button onClick="{{ confirmAdminEditYes }}" style="width:100%;padding:15px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.primary }};color:#fff;font-size:15px;font-weight:700;cursor:pointer;">Yes, continue</button>
+        <button onClick="{{ closeModal }}" style="margin-top:8px;width:100%;padding:13px;border:none;border-radius:{{ theme.radiusButton }}px;background:transparent;color:{{ theme.textMuted }};font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      </sc-if>
+
+      <sc-if value="{{ isConfirmDeleteModal }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:19px;margin-bottom:8px;">Remove this gift idea?</div>
+        <div style="font-size:14px;color:{{ theme.textMuted }};line-height:1.5;margin-bottom:20px;">"{{ confirmDeleteTitle }}" will be removed from the list for good.</div>
+        <button onClick="{{ confirmDeleteYes }}" style="width:100%;padding:15px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.danger }};color:#fff;font-size:15px;font-weight:700;cursor:pointer;">Remove</button>
+        <button onClick="{{ closeModal }}" style="margin-top:8px;width:100%;padding:13px;border:none;border-radius:{{ theme.radiusButton }}px;background:transparent;color:{{ theme.textMuted }};font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      </sc-if>
+
+      <sc-if value="{{ isConfirmDeleteUserModal }}" hint-placeholder-val="{{ false }}">
+        <div style="width:48px;height:48px;border-radius:999px;background:{{ theme.dangerSoft }};display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ theme.danger }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+        </div>
+        <div style="font-family:{{ theme.fontDisplay }};font-weight:800;font-size:19px;margin-bottom:8px;">Remove {{ confirmDeleteUserName }}?</div>
+        <div style="font-size:14px;color:{{ theme.textMuted }};line-height:1.5;margin-bottom:16px;">This permanently deletes <strong>{{ confirmDeleteUserName }}</strong>'s account and their entire gift list. This can't be undone.</div>
+        <label style="font-size:13px;font-weight:600;color:{{ theme.textMuted }};margin-bottom:6px;display:block;">Type "{{ confirmDeleteUserName }}" to confirm</label>
+        <input type="text" value="{{ confirmDeleteUserTypedName }}" onChange="{{ onConfirmDeleteUserTypedNameChange }}" style="width:100%;padding:13px 15px;border-radius:{{ theme.radiusInput }}px;border:1.5px solid {{ theme.border }};font-size:15px;margin-bottom:10px;background:{{ theme.bg }};color:{{ theme.text }};" />
+        <sc-if value="{{ confirmDeleteUserError }}" hint-placeholder-val="{{ false }}">
+          <div style="color:{{ theme.danger }};font-size:13px;margin-bottom:8px;">{{ confirmDeleteUserError }}</div>
+        </sc-if>
+        <button onClick="{{ confirmDeleteUserYes }}" disabled="{{ confirmDeleteUserDisabled }}" style="margin-top:8px;width:100%;padding:15px;border:none;border-radius:{{ theme.radiusButton }}px;background:{{ theme.danger }};color:#fff;font-size:15px;font-weight:700;cursor:pointer;opacity:{{ confirmDeleteUserOpacity }};">Permanently delete</button>
+        <button onClick="{{ closeModal }}" style="margin-top:8px;width:100%;padding:13px;border:none;border-radius:{{ theme.radiusButton }}px;background:transparent;color:{{ theme.textMuted }};font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      </sc-if>
+
+    </div>
+  </div>
+</sc-if>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = this.loadInitial();
+
+  loadInitial() {
+    const ACCENTS = ['#4C5FE8','#FF6B6B','#F2A93B','#2EC4B6','#8B5CF6','#FF8FB1'];
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('giftly_v1') || 'null'); } catch (e) {}
+    if (saved && saved.users && saved.gifts) {
+      return {
+        theme: saved.theme || 'a',
+        users: saved.users,
+        gifts: saved.gifts,
+        sessionUserId: saved.sessionUserId || null,
+        view: saved.sessionUserId ? 'home' : 'userSelect',
+        activeOtherUserId: null,
+        listEditUserId: null,
+        viaAdmin: false,
+        showReceived: false,
+        modal: null,
+        loginUserId: null, loginPassword: '', loginError: '',
+        draft: {}, draftError: '',
+        userDraft: {}, userFormError: '',
+        confirmDeleteGiftId: null,
+        confirmAdminEditUserId: null,
+        confirmDeleteUserId: null, confirmDeleteUserTypedName: '', confirmDeleteUserError: '',
+        editingGiftId: null,
+        editingClaimGiftId: null,
+      };
+    }
+    const users = [
+      { id: 'u1', name: 'Mila', password: 'gifts2026', isAdmin: true, color: ACCENTS[0] },
+      { id: 'u2', name: 'Noah', password: 'gifts2026', isAdmin: false, color: ACCENTS[1] },
+      { id: 'u3', name: 'Sara', password: 'gifts2026', isAdmin: false, color: ACCENTS[2] },
+      { id: 'u4', name: 'Daan', password: 'gifts2026', isAdmin: false, color: ACCENTS[3] },
+      { id: 'u5', name: 'Fenna', password: 'gifts2026', isAdmin: false, color: ACCENTS[4] },
+      { id: 'u6', name: 'Tom', password: 'gifts2026', isAdmin: false, color: ACCENTS[5] },
+    ];
+    const today = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    const addDays = (n) => { const d = new Date(today); d.setDate(d.getDate() + n); return iso(d); };
+    const gifts = [
+      { id: 'g1', ownerId: 'u1', title: 'Wireless earbuds', link: 'https://example.com/earbuds', price: '89', description: 'Noise cancelling please.', exactColor: true, exactProduct: false, onlyOnce: true, manualReceived: false, claim: null, priority: 1 },
+      { id: 'g2', ownerId: 'u1', title: 'Coffee subscription', link: '', price: '30', description: '', exactColor: false, exactProduct: false, onlyOnce: false, manualReceived: false, claim: null, priority: 2 },
+      { id: 'g3', ownerId: 'u1', title: 'Yoga mat', link: 'https://example.com/mat', price: '25', description: 'Thick one, for a bad back.', exactColor: false, exactProduct: false, onlyOnce: true, manualReceived: false, claim: null, priority: 3 },
+
+      { id: 'g4', ownerId: 'u2', title: 'Board game: Catan', link: 'https://example.com/catan', price: '40', description: '', exactColor: false, exactProduct: true, onlyOnce: true, manualReceived: false, claim: null, priority: 1 },
+      { id: 'g5', ownerId: 'u2', title: 'Wool socks', link: '', price: '12', description: 'Always a good idea.', exactColor: false, exactProduct: false, onlyOnce: false, manualReceived: false, claim: null, priority: 2 },
+      { id: 'g6', ownerId: 'u2', title: 'Novel — Dune', link: 'https://example.com/dune', price: '15', description: '', exactColor: false, exactProduct: false, onlyOnce: true, manualReceived: false, claim: null, priority: 3 },
+
+      { id: 'g7', ownerId: 'u3', title: 'Perfume — Chanel No 5', link: 'https://example.com/perfume', price: '95', description: '', exactColor: false, exactProduct: true, onlyOnce: true, manualReceived: false, claim: null, priority: 1 },
+      { id: 'g8', ownerId: 'u3', title: 'Plant — Monstera', link: 'https://example.com/plant', price: '20', description: '', exactColor: false, exactProduct: false, onlyOnce: true, manualReceived: false, claim: null, priority: 2 },
+      { id: 'g9', ownerId: 'u3', title: 'Cooking class voucher', link: '', price: '60', description: '', exactColor: false, exactProduct: false, onlyOnce: true, manualReceived: true, claim: null, priority: 3 },
+
+      { id: 'g10', ownerId: 'u4', title: 'Bluetooth speaker', link: 'https://example.com/speaker', price: '55', description: '', exactColor: false, exactProduct: false, onlyOnce: true, manualReceived: false, claim: null, priority: 1 },
+      { id: 'g11', ownerId: 'u4', title: 'Running shoes', link: 'https://example.com/shoes', price: '120', description: 'Size 43.', exactColor: true, exactProduct: true, onlyOnce: true, manualReceived: false, claim: { by: 'u2', date: addDays(10) }, priority: 2 },
+      { id: 'g12', ownerId: 'u4', title: 'Desk lamp', link: 'https://example.com/lamp', price: '40', description: '', exactColor: false, exactProduct: false, onlyOnce: true, manualReceived: false, claim: { by: 'u3', date: addDays(-10) }, priority: 3 },
+
+      { id: 'g13', ownerId: 'u5', title: 'Scented candles', link: '', price: '18', description: '', exactColor: false, exactProduct: false, onlyOnce: false, manualReceived: false, claim: null, priority: 1 },
+      { id: 'g14', ownerId: 'u5', title: 'Art print', link: 'https://example.com/print', price: '35', description: '', exactColor: false, exactProduct: true, onlyOnce: true, manualReceived: false, claim: null, priority: 2 },
+
+      { id: 'g15', ownerId: 'u6', title: 'Chess set', link: 'https://example.com/chess', price: '45', description: '', exactColor: false, exactProduct: false, onlyOnce: true, manualReceived: false, claim: null, priority: 1 },
+      { id: 'g16', ownerId: 'u6', title: 'Craft beer selection', link: '', price: '25', description: '', exactColor: false, exactProduct: false, onlyOnce: false, manualReceived: false, claim: null, priority: 2 },
+    ];
+    return {
+      theme: 'a', users, gifts, sessionUserId: null, view: 'userSelect',
+      activeOtherUserId: null, listEditUserId: null, viaAdmin: false, showReceived: false,
+      modal: null, loginUserId: null, loginPassword: '', loginError: '',
+      draft: {}, draftError: '', userDraft: {}, userFormError: '',
+      confirmDeleteGiftId: null, confirmAdminEditUserId: null,
+      confirmDeleteUserId: null, confirmDeleteUserTypedName: '', confirmDeleteUserError: '',
+      editingGiftId: null, editingClaimGiftId: null,
+    };
+  }
+
+  persist(extra) {
+    const s = this.state;
+    try {
+      localStorage.setItem('giftly_v1', JSON.stringify({
+        theme: s.theme, users: s.users, gifts: s.gifts, sessionUserId: s.sessionUserId,
+      }));
+    } catch (e) {}
+  }
+
+  setStateP(patch) { this.setState(patch, () => this.persist()); }
+
+  todayStr() { return new Date().toISOString().slice(0, 10); }
+  isPastGiftDay(dateStr) { return this.todayStr() > dateStr; }
+  uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  effectiveReceived(g) {
+    if (g.manualReceived) return true;
+    if (g.claim && g.onlyOnce && this.isPastGiftDay(g.claim.date)) return true;
+    return false;
+  }
+
+  formatPrice(p) { return (p !== undefined && p !== null && p !== '') ? ('€' + p) : ''; }
+  formatDate(d) {
+    if (!d) return '';
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  imageFor(g) { return g.link ? ('https://picsum.photos/seed/' + g.id + '/400/300') : null; }
+
+  // ---- nav ----
+  selectUserForLogin(u) { this.setState({ view: 'login', loginUserId: u.id, loginPassword: '', loginError: '' }); }
+  backToUserSelect() { this.setState({ view: 'userSelect', loginUserId: null, loginPassword: '', loginError: '' }); }
+  doLogin() {
+    const pw = this.state.loginPassword || '';
+    const u = this.state.users.find(x => x.id === this.state.loginUserId);
+    if (!u) { this.setState({ loginError: 'Something went wrong, pick your name again.' }); return; }
+    if (u.password !== pw) { this.setState({ loginError: 'Incorrect password.' }); return; }
+    this.setStateP({ sessionUserId: u.id, view: 'home', loginError: '', loginUserId: null, loginPassword: '' });
+  }
+  onLoginKeyDown(e) { if (e.key === 'Enter') this.doLogin(); }
+  doLogout() { this.setStateP({ sessionUserId: null, view: 'userSelect', loginUserId: null, loginPassword: '' }); }
+  onOpenMyList() { this.setState({ view: 'listEdit', listEditUserId: this.state.sessionUserId, viaAdmin: false, showReceived: false }); }
+  openOtherUser(id) { this.setState({ view: 'otherList', activeOtherUserId: id, showReceived: false }); }
+  onOpenAdmin() { this.setState({ view: 'admin' }); }
+  goHome() { this.setState({ view: 'home' }); }
+  onBack() {
+    const v = this.state.view;
+    if (v === 'listEdit') this.setState({ view: this.state.viaAdmin ? 'admin' : 'home' });
+    else if (v === 'otherList') this.setState({ view: 'home' });
+    else if (v === 'admin') this.setState({ view: 'home' });
+    else this.setState({ view: 'home' });
+  }
+  toggleShowReceived() { this.setState(s => ({ showReceived: !s.showReceived })); }
+  setThemeA() { this.setStateP({ theme: 'a' }); }
+  setThemeB() { this.setStateP({ theme: 'b' }); }
+
+  // ---- gift crud ----
+  openAddGift() {
+    this.setState({
+      modal: 'giftForm', editingGiftId: null, draftError: '',
+      draft: { title: '', link: '', price: '', description: '', exactColor: false, exactProduct: false, onlyOnce: true },
+    });
+  }
+  openEditGift(g) {
+    this.setState({
+      modal: 'giftForm', editingGiftId: g.id, draftError: '',
+      draft: { title: g.title, link: g.link || '', price: g.price || '', description: g.description || '', exactColor: !!g.exactColor, exactProduct: !!g.exactProduct, onlyOnce: g.onlyOnce !== false },
+    });
+  }
+  onDraftTitleChange(e) { this.setState(s => ({ draft: { ...s.draft, title: e.target.value } })); }
+  onDraftLinkChange(e) { this.setState(s => ({ draft: { ...s.draft, link: e.target.value } })); }
+  onDraftPriceChange(e) { this.setState(s => ({ draft: { ...s.draft, price: e.target.value } })); }
+  onDraftDescriptionChange(e) { this.setState(s => ({ draft: { ...s.draft, description: e.target.value } })); }
+  toggleDraftExactColor() { this.setState(s => ({ draft: { ...s.draft, exactColor: !s.draft.exactColor } })); }
+  toggleDraftExactProduct() { this.setState(s => ({ draft: { ...s.draft, exactProduct: !s.draft.exactProduct } })); }
+  toggleDraftOnlyOnce() { this.setState(s => ({ draft: { ...s.draft, onlyOnce: !s.draft.onlyOnce } })); }
+  saveGiftForm() {
+    const d = this.state.draft;
+    if (!d.title || !d.title.trim()) { this.setState({ draftError: 'A title is required.' }); return; }
+    const ownerId = this.state.listEditUserId;
+    if (this.state.editingGiftId) {
+      this.setStateP(s => ({
+        gifts: s.gifts.map(g => g.id === s.editingGiftId ? { ...g, title: d.title.trim(), link: d.link.trim(), price: d.price, description: d.description, exactColor: !!d.exactColor, exactProduct: !!d.exactProduct, onlyOnce: !!d.onlyOnce } : g),
+        modal: null,
+      }));
+    } else {
+      const maxP = Math.max(0, ...this.state.gifts.filter(g => g.ownerId === ownerId).map(g => g.priority || 0));
+      const newGift = { id: this.uid('g'), ownerId, title: d.title.trim(), link: d.link.trim(), price: d.price, description: d.description, exactColor: !!d.exactColor, exactProduct: !!d.exactProduct, onlyOnce: !!d.onlyOnce, manualReceived: false, claim: null, priority: maxP + 1 };
+      this.setStateP(s => ({ gifts: [...s.gifts, newGift], modal: null }));
+    }
+  }
+  askDeleteGift(id) { this.setState({ modal: 'confirmDelete', confirmDeleteGiftId: id }); }
+  confirmDeleteYes() {
+    this.setStateP(s => ({ gifts: s.gifts.filter(g => g.id !== s.confirmDeleteGiftId), modal: null, confirmDeleteGiftId: null }));
+  }
+  toggleManualReceived(g) {
+    this.setStateP(s => ({ gifts: s.gifts.map(x => x.id === g.id ? { ...x, manualReceived: !x.manualReceived } : x) }));
+  }
+  moveGift(g, dir) {
+    this.setStateP(s => {
+      const list = s.gifts.filter(x => x.ownerId === g.ownerId && !this.effectiveReceived(x)).sort((a, b) => a.priority - b.priority);
+      const idx = list.findIndex(x => x.id === g.id);
+      const swapIdx = idx + dir;
+      if (swapIdx < 0 || swapIdx >= list.length) return {};
+      const a = list[idx], b = list[swapIdx];
+      return { gifts: s.gifts.map(x => x.id === a.id ? { ...x, priority: b.priority } : x.id === b.id ? { ...x, priority: a.priority } : x) };
+    });
+  }
+
+  // ---- claim ----
+  openClaim(g) {
+    this.setState({
+      modal: 'claim', editingClaimGiftId: g.id, claimModalError: '',
+      draftClaimDate: (g.claim && g.claim.by === this.state.sessionUserId) ? g.claim.date : this.todayStr(),
+    });
+  }
+  onDraftClaimDateChange(e) { this.setState({ draftClaimDate: e.target.value }); }
+  confirmClaim() {
+    const date = this.state.draftClaimDate;
+    if (!date) { this.setState({ claimModalError: 'Pick a date first.' }); return; }
+    const gid = this.state.editingClaimGiftId;
+    const by = this.state.sessionUserId;
+    this.setStateP(s => ({ gifts: s.gifts.map(g => g.id === gid ? { ...g, claim: { by, date } } : g), modal: null, editingClaimGiftId: null }));
+  }
+  removeClaim() {
+    const gid = this.state.editingClaimGiftId;
+    this.setStateP(s => ({ gifts: s.gifts.map(g => g.id === gid ? { ...g, claim: null } : g), modal: null, editingClaimGiftId: null }));
+  }
+
+  // ---- admin ----
+  openAddUser() { this.setState({ modal: 'userForm', editingUserId: null, userFormError: '', userDraft: { name: '', password: 'gifts2026', isAdmin: false } }); }
+  openEditUser(u) { this.setState({ modal: 'userForm', editingUserId: u.id, userFormError: '', userDraft: { name: u.name, password: u.password, isAdmin: u.isAdmin } }); }
+  onDraftUserNameChange(e) { this.setState(s => ({ userDraft: { ...s.userDraft, name: e.target.value } })); }
+  onDraftUserPasswordChange(e) { this.setState(s => ({ userDraft: { ...s.userDraft, password: e.target.value } })); }
+  toggleDraftUserAdmin() { this.setState(s => ({ userDraft: { ...s.userDraft, isAdmin: !s.userDraft.isAdmin } })); }
+  saveUserForm() {
+    const d = this.state.userDraft;
+    if (!d.name || !d.name.trim()) { this.setState({ userFormError: 'Name is required.' }); return; }
+    if (!d.password || !d.password.trim()) { this.setState({ userFormError: 'Password is required.' }); return; }
+    const editingId = this.state.editingUserId;
+    if (editingId) {
+      const wouldRemoveLastAdmin = !d.isAdmin && this.state.users.find(u => u.id === editingId).isAdmin && this.state.users.filter(u => u.isAdmin).length <= 1;
+      if (wouldRemoveLastAdmin) { this.setState({ userFormError: 'There must be at least one admin.' }); return; }
+      this.setStateP(s => ({ users: s.users.map(u => u.id === editingId ? { ...u, name: d.name.trim(), password: d.password, isAdmin: !!d.isAdmin } : u), modal: null }));
+    } else {
+      const ACCENTS = ['#4C5FE8', '#FF6B6B', '#F2A93B', '#2EC4B6', '#8B5CF6', '#FF8FB1'];
+      const color = ACCENTS[this.state.users.length % ACCENTS.length];
+      const newUser = { id: this.uid('u'), name: d.name.trim(), password: d.password, isAdmin: !!d.isAdmin, color };
+      this.setStateP(s => ({ users: [...s.users, newUser], modal: null }));
+    }
+  }
+  askEditListAsAdmin(userId) { this.setState({ modal: 'confirmAdminEdit', confirmAdminEditUserId: userId }); }
+  confirmAdminEditYes() {
+    const id = this.state.confirmAdminEditUserId;
+    this.setState({ view: 'listEdit', listEditUserId: id, viaAdmin: true, showReceived: false, modal: null, confirmAdminEditUserId: null });
+  }
+
+  askDeleteUser(u) { this.setState({ modal: 'confirmDeleteUser', confirmDeleteUserId: u.id, confirmDeleteUserTypedName: '', confirmDeleteUserError: '' }); }
+  onConfirmDeleteUserTypedNameChange(e) { this.setState({ confirmDeleteUserTypedName: e.target.value, confirmDeleteUserError: '' }); }
+  confirmDeleteUserYes() {
+    const id = this.state.confirmDeleteUserId;
+    const u = this.state.users.find(x => x.id === id);
+    if (!u) { this.setState({ modal: null }); return; }
+    if (id === this.state.sessionUserId) { this.setState({ confirmDeleteUserError: "You can't delete the account you're currently logged in as." }); return; }
+    if (u.isAdmin && this.state.users.filter(x => x.isAdmin).length <= 1) { this.setState({ confirmDeleteUserError: 'There must be at least one admin — promote someone else first.' }); return; }
+    if ((this.state.confirmDeleteUserTypedName || '').trim() !== u.name) { this.setState({ confirmDeleteUserError: 'That name doesn\'t match.' }); return; }
+    this.setStateP(s => ({
+      users: s.users.filter(x => x.id !== id),
+      gifts: s.gifts.filter(g => g.ownerId !== id).map(g => g.claim && g.claim.by === id ? { ...g, claim: null } : g),
+      modal: null, confirmDeleteUserId: null, confirmDeleteUserTypedName: '',
+    }));
+  }
+
+  closeModal() { this.setState({ modal: null }); }
+  stopProp(e) { e.stopPropagation(); }
+
+  buildGiftVM(g, opts) {
+    const eff = this.effectiveReceived(g);
+    return {
+      id: g.id, title: g.title, link: g.link, hasLink: !!g.link,
+      price: g.price, priceLabel: this.formatPrice(g.price),
+      description: g.description, imageUrl: this.imageFor(g),
+      exactColor: !!g.exactColor, exactProduct: !!g.exactProduct, repeatable: !g.onlyOnce,
+      hasTags: !!g.exactColor || !!g.exactProduct || !g.onlyOnce || eff,
+      isReceived: eff,
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const THEMES = {
+      a: {
+        bg: '#F4F5FA', surface: '#FFFFFF', primary: '#4C5FE8', primarySoft: '#E9EBFC', onPrimary: '#fff',
+        text: '#1A1B25', textMuted: '#6B7080', border: '#E4E6EF',
+        radiusCard: 20, radiusButton: 14, radiusInput: 12,
+        shadow: '0 1px 3px rgba(20,20,43,0.07), 0 1px 2px rgba(20,20,43,0.05)',
+        shadowRaised: '0 6px 18px rgba(76,95,232,0.28)',
+        headerBg: '#4C5FE8', headerText: '#FFFFFF', headerShadow: '0 2px 8px rgba(20,20,43,0.12)',
+        themeSwitchBg: 'rgba(255,255,255,0.18)',
+        fontDisplay: "'Manrope', system-ui, sans-serif",
+        fontBody: "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        ease: 'cubic-bezier(0.2,0,0,1)',
+        danger: '#E5484D', dangerSoft: '#FDE7E8',
+        accentAmber: '#F2A93B', accentAmberSoft: '#FDF0DD', accentAmberText: '#B5720F',
+        accentViolet: '#8B5CF6', accentVioletSoft: '#EFE7FE', accentVioletText: '#6D3FCB',
+        accentTeal: '#2EC4B6', accentTealSoft: '#DFF8F5', accentTealText: '#12897D',
+        accentGreen: '#22C55E', accentGreenSoft: '#E4F8EA', accentGreenText: '#178A45',
+      },
+      b: {
+        bg: '#EEF0FF', surface: '#FFFFFF', primary: '#4C5FE8', primarySoft: '#E4E7FF', onPrimary: '#fff',
+        text: '#1A1B25', textMuted: '#6B7080', border: '#DEE1FA',
+        radiusCard: 28, radiusButton: 999, radiusInput: 999,
+        shadow: '0 2px 10px rgba(76,95,232,0.10)',
+        shadowRaised: '0 10px 26px rgba(76,95,232,0.30)',
+        headerBg: '#FFFFFF', headerText: '#1A1B25', headerShadow: '0 2px 10px rgba(76,95,232,0.08)',
+        themeSwitchBg: 'rgba(76,95,232,0.10)',
+        fontDisplay: "'Manrope', system-ui, sans-serif",
+        fontBody: "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        ease: 'cubic-bezier(0.2,0,0,1)',
+        danger: '#E5484D', dangerSoft: '#FDE7E8',
+        accentAmber: '#F2A93B', accentAmberSoft: '#FDF0DD', accentAmberText: '#B5720F',
+        accentViolet: '#8B5CF6', accentVioletSoft: '#EFE7FE', accentVioletText: '#6D3FCB',
+        accentTeal: '#2EC4B6', accentTealSoft: '#DFF8F5', accentTealText: '#12897D',
+        accentGreen: '#22C55E', accentGreenSoft: '#E4F8EA', accentGreenText: '#178A45',
+      },
+    };
+    const theme = THEMES[s.theme] || THEMES.a;
+    const currentUser = s.users.find(u => u.id === s.sessionUserId) || null;
+
+    const isLogin = !currentUser;
+    const isPasswordStep = isLogin && s.view === 'login';
+    const isUserSelectStep = isLogin && !isPasswordStep;
+    const isHome = !isLogin && s.view === 'home';
+    const isListEdit = !isLogin && s.view === 'listEdit';
+    const isOtherList = !isLogin && s.view === 'otherList';
+    const isAdmin = !isLogin && s.view === 'admin';
+    const showTopBar = !isLogin;
+    const showBackButton = isListEdit || isOtherList || isAdmin;
+
+    let headerTitle = 'Giftly', headerSubtitle = '';
+    if (isHome) headerTitle = currentUser ? ('Hi, ' + currentUser.name) : 'Giftly';
+    if (isListEdit) {
+      const owner = s.users.find(u => u.id === s.listEditUserId);
+      headerTitle = s.viaAdmin ? ((owner ? owner.name : '') + "'s list") : 'My gift list';
+    }
+    if (isOtherList) {
+      const owner = s.users.find(u => u.id === s.activeOtherUserId);
+      headerTitle = owner ? owner.name : '';
+      headerSubtitle = "Their gift ideas";
+    }
+    if (isAdmin) headerTitle = 'Admin';
+
+    // family list
+    const familyMembers = currentUser ? s.users.filter(u => u.id !== currentUser.id).map(u => {
+      const activeCount = s.gifts.filter(g => g.ownerId === u.id && !this.effectiveReceived(g) && !(g.claim && g.claim.by !== currentUser.id && g.onlyOnce)).length;
+      return {
+        id: u.id, name: u.name, initial: u.name.charAt(0).toUpperCase(), color: u.color,
+        countLabel: activeCount + (activeCount === 1 ? ' idea' : ' ideas'),
+        onOpen: () => this.openOtherUser(u.id),
+      };
+    }) : [];
+
+    const myActiveCount = currentUser ? s.gifts.filter(g => g.ownerId === currentUser.id && !this.effectiveReceived(g)).length : 0;
+
+    // listEdit data (blind mode)
+    let listEditActive = [], listEditReceived = [];
+    if (isListEdit) {
+      const owner = s.listEditUserId;
+      const all = s.gifts.filter(g => g.ownerId === owner);
+      const activeRaw = all.filter(g => !this.effectiveReceived(g)).sort((a, b) => a.priority - b.priority);
+      const receivedRaw = all.filter(g => this.effectiveReceived(g));
+      listEditActive = activeRaw.map((g, i) => ({
+        ...this.buildGiftVM(g),
+        moveUpDisabled: i === 0, moveUpOpacity: i === 0 ? 0.35 : 1,
+        moveDownDisabled: i === activeRaw.length - 1, moveDownOpacity: i === activeRaw.length - 1 ? 0.35 : 1,
+        onMoveUp: () => this.moveGift(g, -1), onMoveDown: () => this.moveGift(g, 1),
+        onEdit: () => this.openEditGift(g), onDelete: () => this.askDeleteGift(g.id),
+        onMarkReceived: () => this.toggleManualReceived(g),
+      }));
+      listEditReceived = receivedRaw.map(g => ({
+        ...this.buildGiftVM(g),
+        onUnmarkReceived: () => this.toggleManualReceived(g), onDelete: () => this.askDeleteGift(g.id),
+      }));
+    }
+
+    // otherList data (non-blind)
+    let otherActive = [], otherReceived = [];
+    if (isOtherList && currentUser) {
+      const owner = s.activeOtherUserId;
+      const viewer = currentUser.id;
+      s.gifts.filter(g => g.ownerId === owner).forEach(g => {
+        const eff = this.effectiveReceived(g);
+        const claimedByMe = !!(g.claim && g.claim.by === viewer);
+        if (!claimedByMe && g.claim && g.onlyOnce && !eff && g.claim.by !== viewer) return; // hidden: someone else's active claim
+        const vm = {
+          ...this.buildGiftVM(g),
+          claimedByMe, claimDateLabel: g.claim ? this.formatDate(g.claim.date) : '',
+          canClaim: !claimedByMe && !eff && !(g.claim && g.onlyOnce),
+          onClaim: () => this.openClaim(g), onEditClaim: () => this.openClaim(g),
+          titleDecoration: claimedByMe ? 'line-through' : 'none',
+          cardOpacity: claimedByMe && !eff ? 0.85 : 1,
+        };
+        if (eff) otherReceived.push(vm); else otherActive.push(vm);
+      });
+      otherActive.sort((a, b) => 0);
+    }
+
+    // admin
+    const adminUsers = s.users.map(u => ({
+      id: u.id, name: u.name, initial: u.name.charAt(0).toUpperCase(), color: u.color, isAdmin: u.isAdmin,
+      onEdit: () => this.openEditUser(u), onEditListRequest: () => this.askEditListAsAdmin(u.id),
+      onDelete: () => this.askDeleteUser(u),
+    }));
+
+    const selectableUsers = s.users.map(u => ({
+      id: u.id, name: u.name, initial: u.name.charAt(0).toUpperCase(), color: u.color,
+      onSelect: () => this.selectUserForLogin(u),
+    }));
+    const loginUser = s.loginUserId ? s.users.find(u => u.id === s.loginUserId) : null;
+    const deleteUserTarget = s.confirmDeleteUserId ? s.users.find(u => u.id === s.confirmDeleteUserId) : null;
+    const deleteUserCanConfirm = !!(deleteUserTarget && (s.confirmDeleteUserTypedName || '').trim() === deleteUserTarget.name);
+
+    // modal derived
+    const modalOpen = !!s.modal;
+    const isGiftFormModal = s.modal === 'giftForm';
+    const isClaimModal = s.modal === 'claim';
+    const isUserFormModal = s.modal === 'userForm';
+    const isConfirmAdminEditModal = s.modal === 'confirmAdminEdit';
+    const isConfirmDeleteModal = s.modal === 'confirmDelete';
+    const isConfirmDeleteUserModal = s.modal === 'confirmDeleteUser';
+
+    const draft = s.draft || {};
+    const claimGift = s.editingClaimGiftId ? s.gifts.find(g => g.id === s.editingClaimGiftId) : null;
+    const confirmAdminEditUser = s.confirmAdminEditUserId ? s.users.find(u => u.id === s.confirmAdminEditUserId) : null;
+    const confirmDeleteGift = s.confirmDeleteGiftId ? s.gifts.find(g => g.id === s.confirmDeleteGiftId) : null;
+
+    return {
+      theme, isLogin, isHome, isListEdit, isOtherList, isAdmin, showTopBar, showBackButton,
+      headerTitle, headerSubtitle,
+      isCurrentUserAdmin: !!(currentUser && currentUser.isAdmin),
+      onOpenMyList: () => this.onOpenMyList(), onOpenAdmin: () => this.onOpenAdmin(), onBack: () => this.onBack(),
+      doLogout: () => this.doLogout(),
+
+      isUserSelectStep, isPasswordStep, selectableUsers,
+      loginUserName: loginUser ? loginUser.name : '', loginUserColor: loginUser ? loginUser.color : theme.primary,
+      loginUserInitial: loginUser ? loginUser.name.charAt(0).toUpperCase() : '',
+      backToUserSelect: () => this.backToUserSelect(),
+      loginPassword: s.loginPassword,
+      onLoginPasswordChange: (e) => this.setState({ loginPassword: e.target.value }),
+      onLoginKeyDown: (e) => this.onLoginKeyDown(e),
+      doLogin: () => this.doLogin(), hasLoginError: !!s.loginError, loginError: s.loginError,
+
+      familyMembers, myActiveCountLabel: myActiveCount + (myActiveCount === 1 ? ' idea' : ' ideas'),
+
+      viaAdminBanner: isListEdit && s.viaAdmin,
+      openAddGift: () => this.openAddGift(),
+      listEditHasActive: listEditActive.length > 0, listEditEmptyActive: isListEdit && listEditActive.length === 0,
+      listEditActive, listEditHasReceived: listEditReceived.length > 0, listEditReceived,
+      showReceived: s.showReceived, toggleShowReceived: () => this.toggleShowReceived(),
+      showReceivedLabel: s.showReceived ? 'Hide received gifts' : 'Show received gifts',
+
+      otherActive, otherEmptyActive: isOtherList && otherActive.length === 0, otherHasReceived: otherReceived.length > 0, otherReceived,
+
+      adminUsers, openAddUser: () => this.openAddUser(),
+
+      modalOpen, closeModal: () => this.closeModal(), stopProp: (e) => this.stopProp(e),
+
+      isGiftFormModal,
+      giftFormTitle: s.editingGiftId ? 'Edit gift idea' : 'Add a gift idea',
+      giftFormSaveLabel: s.editingGiftId ? 'Save changes' : 'Add gift',
+      draftTitle: draft.title || '', draftLink: draft.link || '', draftPrice: draft.price || '', draftDescription: draft.description || '',
+      onDraftTitleChange: (e) => this.onDraftTitleChange(e), onDraftLinkChange: (e) => this.onDraftLinkChange(e),
+      onDraftPriceChange: (e) => this.onDraftPriceChange(e), onDraftDescriptionChange: (e) => this.onDraftDescriptionChange(e),
+      draftExactColor: !!draft.exactColor, draftExactProduct: !!draft.exactProduct, draftOnlyOnce: draft.onlyOnce !== false,
+      toggleDraftExactColor: () => this.toggleDraftExactColor(), toggleDraftExactProduct: () => this.toggleDraftExactProduct(), toggleDraftOnlyOnce: () => this.toggleDraftOnlyOnce(),
+      draftExactColorBorder: draft.exactColor ? theme.primary : theme.border, draftExactColorBg: draft.exactColor ? theme.primary : 'transparent',
+      draftExactProductBorder: draft.exactProduct ? theme.primary : theme.border, draftExactProductBg: draft.exactProduct ? theme.primary : 'transparent',
+      draftOnlyOnceBorder: (draft.onlyOnce !== false) ? theme.primary : theme.border, draftOnlyOnceBg: (draft.onlyOnce !== false) ? theme.primary : 'transparent',
+      draftError: s.draftError, saveGiftForm: () => this.saveGiftForm(),
+
+      isClaimModal,
+      claimModalTitle: claimGift ? ('Give "' + claimGift.title + '"') : 'Claim gift',
+      draftClaimDate: s.draftClaimDate || this.todayStr(), onDraftClaimDateChange: (e) => this.onDraftClaimDateChange(e),
+      claimModalError: s.claimModalError, confirmClaim: () => this.confirmClaim(), removeClaim: () => this.removeClaim(),
+      claimModalSaveLabel: (claimGift && claimGift.claim && claimGift.claim.by === s.sessionUserId) ? 'Update date' : 'Confirm — I\'ll give this',
+      claimModalShowRemove: !!(claimGift && claimGift.claim && claimGift.claim.by === s.sessionUserId),
+
+      isUserFormModal,
+      userFormTitle: s.editingUserId ? 'Edit family member' : 'Add family member',
+      draftUserName: (s.userDraft && s.userDraft.name) || '', draftUserPassword: (s.userDraft && s.userDraft.password) || '',
+      onDraftUserNameChange: (e) => this.onDraftUserNameChange(e), onDraftUserPasswordChange: (e) => this.onDraftUserPasswordChange(e),
+      draftUserAdmin: !!(s.userDraft && s.userDraft.isAdmin), toggleDraftUserAdmin: () => this.toggleDraftUserAdmin(),
+      draftUserAdminBorder: (s.userDraft && s.userDraft.isAdmin) ? theme.primary : theme.border,
+      draftUserAdminBg: (s.userDraft && s.userDraft.isAdmin) ? theme.primary : 'transparent',
+      userFormError: s.userFormError, saveUserForm: () => this.saveUserForm(),
+
+      isConfirmAdminEditModal, confirmAdminEditName: confirmAdminEditUser ? confirmAdminEditUser.name : '',
+      confirmAdminEditYes: () => this.confirmAdminEditYes(),
+
+      isConfirmDeleteModal, confirmDeleteTitle: confirmDeleteGift ? confirmDeleteGift.title : '',
+      confirmDeleteYes: () => this.confirmDeleteYes(),
+
+      isConfirmDeleteUserModal, confirmDeleteUserName: deleteUserTarget ? deleteUserTarget.name : '',
+      confirmDeleteUserTypedName: s.confirmDeleteUserTypedName || '',
+      onConfirmDeleteUserTypedNameChange: (e) => this.onConfirmDeleteUserTypedNameChange(e),
+      confirmDeleteUserError: s.confirmDeleteUserError, confirmDeleteUserYes: () => this.confirmDeleteUserYes(),
+      confirmDeleteUserDisabled: !deleteUserCanConfirm, confirmDeleteUserOpacity: deleteUserCanConfirm ? 1 : 0.45,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
