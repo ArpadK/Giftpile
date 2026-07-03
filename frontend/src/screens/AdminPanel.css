@@ -29,18 +29,21 @@
 }
 
 .add-user-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
   width: 100%;
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background-color: var(--color-primary);
-  color: white;
+  padding: var(--spacing-lg);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: opacity var(--duration-fast) var(--easing-standard);
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: 18px;
   font-family: inherit;
 }
 
@@ -51,34 +54,34 @@
 .user-cards {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-sm);
 }
 
 .user-card {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
   box-shadow: var(--shadow-card);
 }
 
 .user-card__header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .user-card__avatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-label);
+  font-size: 14px;
   flex-shrink: 0;
 }
 
@@ -111,38 +114,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  background-color: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  color: var(--color-text-primary);
-  transition: all var(--duration-fast) var(--easing-standard);
+  transition: opacity var(--duration-fast) var(--easing-standard);
   font-family: inherit;
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {
-  background-color: var(--color-border);
+  opacity: 0.85;
 }
 
 .icon-btn--danger {
-  color: var(--color-danger);
-}
-
-.icon-btn--danger:hover {
   background-color: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .user-card__list-btn {
   width: 100%;
-  padding: var(--spacing-md) var(--spacing-lg);
+  margin-top: var(--spacing-sm);
+  padding: 9px;
   background-color: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-label);
+  font-weight: 600;
   color: var(--color-text-primary);
   cursor: pointer;
   transition: all var(--duration-fast) var(--easing-standard);

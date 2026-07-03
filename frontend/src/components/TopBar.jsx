@@ -2,31 +2,33 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import './TopBar.css'
 
-export function TopBar({ title, showBack = false, backTo = '/', showLogout = false, onLogout }) {
+export function TopBar({ title, subtitle, showBack = false, backTo = '/', showLogout = false, onLogout }) {
   const navigate = useNavigate()
 
   return (
     <div className="topbar">
-      {showBack ? (
+      {showBack && (
         <button className="topbar__back" aria-label="Back" onClick={() => navigate(backTo)}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
           </svg>
         </button>
-      ) : (
-        <div style={{ width: 20 }} />
       )}
 
-      {title && <h2 className="topbar__title">{title}</h2>}
+      <div className="topbar__titles">
+        {title && <div className="topbar__title">{title}</div>}
+        {subtitle && <div className="topbar__subtitle">{subtitle}</div>}
+      </div>
 
-      {showLogout ? (
+      {showLogout && (
         <button className="topbar__icon" aria-label="Log out" onClick={onLogout}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M7 17H3V3H7M13 7L18 10L13 13M13 13L18 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
           </svg>
         </button>
-      ) : (
-        <div style={{ width: 20 }} />
       )}
     </div>
   )

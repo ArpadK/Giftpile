@@ -1,18 +1,9 @@
 import React, { useState } from 'react'
-import './DeleteUserConfirmModal.css'
+import './Sheet.css'
 
 /**
- * DeleteUserConfirmModal
- *
- * Confirmation dialog for deleting a user.
- * Requires exact name match before "Permanently delete" button is enabled.
- * Shows inline error text for guardrail violations (self-delete, last admin).
- *
- * Props:
- * - user: the user object to delete
- * - error: optional error message (e.g., "You cannot delete your own account")
- * - onConfirm: callback(userName) when user confirms deletion
- * - onCancel: callback when user cancels or clicks backdrop
+ * DeleteUserConfirmModal — high-friction confirm: the admin must type the user's exact name
+ * before "Permanently delete" enables. Shows inline guardrail errors (self-delete, last admin).
  */
 export function DeleteUserConfirmModal({ user, error, onConfirm, onCancel }) {
   const [confirmName, setConfirmName] = useState('')
@@ -20,61 +11,46 @@ export function DeleteUserConfirmModal({ user, error, onConfirm, onCancel }) {
   const isNameMatched = confirmName === user.name
   const isDisabled = !isNameMatched || !!error
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!isDisabled) {
-      onConfirm(confirmName)
-    }
-  }
-
   return (
-    <div className="confirm-backdrop" onClick={onCancel}>
-      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="confirm-dialog__content">
-          <h3 className="confirm-dialog__title">Delete user?</h3>
-          <p className="confirm-dialog__message">
-            Are you sure you want to permanently delete
-            <span className="confirm-dialog__user-name">"{user.name}"</span>
-            This action cannot be undone. All their gifts and claims will be removed.
-          </p>
-
-          {error && (
-            <div className="confirm-dialog__error">
-              {error}
-            </div>
-          )}
-
-          {!error && (
-            <div className="confirm-dialog__form-group">
-              <label className="confirm-dialog__label">
-                Type "{user.name}" to confirm
-              </label>
-              <input
-                type="text"
-                className="confirm-dialog__input"
-                value={confirmName}
-                onChange={(e) => setConfirmName(e.target.value)}
-                placeholder={user.name}
-                disabled={!!error}
-              />
-            </div>
-          )}
+    <div className="sheet-backdrop" onClick={onCancel}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet__icon-badge sheet__icon-badge--danger">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          </svg>
+        </div>
+        <div className="sheet__title sheet__title--tight">Remove {user.name}?</div>
+        <div className="sheet__text sheet__text--tight">
+          This permanently deletes <strong>{user.name}</strong>'s account and their entire gift
+          list. This can't be undone.
         </div>
 
-        <div className="confirm-dialog__actions">
+        {error ? (
+          <div className="sheet__error">{error}</div>
+        ) : (
+          <>
+            <label className="sheet__label">Type "{user.name}" to confirm</label>
+            <input
+              className="sheet__input"
+              type="text"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={user.name}
+            />
+          </>
+        )}
+
+        <div className="sheet__actions">
           <button
-            className="confirm-dialog__btn confirm-dialog__btn--cancel"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            className="confirm-dialog__btn confirm-dialog__btn--delete"
+            className="sheet__btn sheet__btn--danger"
             disabled={isDisabled}
-            onClick={handleSubmit}
+            onClick={() => !isDisabled && onConfirm(confirmName)}
           >
             Permanently delete
           </button>
+          <button className="sheet__btn sheet__btn--cancel" onClick={onCancel}>Cancel</button>
         </div>
       </div>
     </div>

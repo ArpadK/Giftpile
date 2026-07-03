@@ -72,16 +72,15 @@ export function UserSelect() {
     <div className="user-select">
       <div className="user-select__container">
         <div className="logo-lockup">
-          <svg className="logo-icon" width="44" height="44" viewBox="0 0 44 44" fill="none">
-            <rect width="44" height="44" rx="10" fill="var(--color-primary)"/>
-            <g transform="translate(7, 7)">
-              <path d="M15 7H1C0.4 7 0 7.4 0 8V20C0 20.6 0.4 21 1 21H15C15.6 21 16 20.6 16 20V8C16 7.4 15.6 7 15 7Z" fill="white"/>
-              <path d="M8 3V7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M11 3V7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              <circle cx="4.5" cy="14.5" r="1.5" fill="#4C5FE8"/>
-              <circle cx="11.5" cy="14.5" r="1.5" fill="#4C5FE8"/>
-            </g>
-          </svg>
+          <div className="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 12v10H4V12" />
+              <path d="M2 7h20v5H2z" />
+              <path d="M12 22V7" />
+              <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+              <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+            </svg>
+          </div>
           <h1 className="logo-text">Giftpile</h1>
         </div>
 

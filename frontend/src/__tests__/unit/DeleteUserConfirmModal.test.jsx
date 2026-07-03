@@ -22,14 +22,14 @@ describe('DeleteUserConfirmModal', () => {
 
   describe('delete button state', () => {
     it('should disable delete button initially when input is empty', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal()
+      renderModal()
       const deleteButton = screen.getByRole('button', { name: /permanently delete/i })
       expect(deleteButton).toBeDisabled()
     })
 
     it('should enable delete button when input matches user name exactly', async () => {
       const user = userEvent.setup()
-      const { mockOnConfirm, mockOnCancel } = renderModal()
+      renderModal()
 
       const input = screen.getByPlaceholderText('Alice')
       await user.type(input, 'Alice')
@@ -40,7 +40,7 @@ describe('DeleteUserConfirmModal', () => {
 
     it('should disable delete button when input does not match user name exactly', async () => {
       const user = userEvent.setup()
-      const { mockOnConfirm, mockOnCancel } = renderModal()
+      renderModal()
 
       const input = screen.getByPlaceholderText('Alice')
       await user.type(input, 'Alic')
@@ -51,7 +51,7 @@ describe('DeleteUserConfirmModal', () => {
 
     it('should disable delete button when input is case-sensitive mismatch', async () => {
       const user = userEvent.setup()
-      const { mockOnConfirm, mockOnCancel } = renderModal()
+      renderModal()
 
       const input = screen.getByPlaceholderText('Alice')
       await user.type(input, 'alice')
@@ -62,7 +62,7 @@ describe('DeleteUserConfirmModal', () => {
 
     it('should disable delete button when input has extra spaces', async () => {
       const user = userEvent.setup()
-      const { mockOnConfirm, mockOnCancel } = renderModal()
+      renderModal()
 
       const input = screen.getByPlaceholderText('Alice')
       await user.type(input, 'Alice ')
@@ -74,25 +74,25 @@ describe('DeleteUserConfirmModal', () => {
 
   describe('error state', () => {
     it('should disable delete button when error is present', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal({ error: 'You cannot delete your own account' })
+      renderModal({ error: 'You cannot delete your own account' })
       const deleteButton = screen.getByRole('button', { name: /permanently delete/i })
       expect(deleteButton).toBeDisabled()
     })
 
     it('should show error message when error prop is provided', () => {
       const errorMsg = 'You cannot delete your own account'
-      const { mockOnConfirm, mockOnCancel } = renderModal({ error: errorMsg })
+      renderModal({ error: errorMsg })
       expect(screen.getByText(errorMsg)).toBeInTheDocument()
     })
 
     it('should not show input when error is present', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal({ error: 'You cannot delete your own account' })
+      renderModal({ error: 'You cannot delete your own account' })
       expect(screen.queryByPlaceholderText('Alice')).not.toBeInTheDocument()
     })
 
     it('should not show confirmation label when error is present', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal({ error: 'You cannot delete your own account' })
-      expect(screen.queryByLabelText(/type "Alice" to confirm/i)).not.toBeInTheDocument()
+      renderModal({ error: 'You cannot delete your own account' })
+      expect(screen.queryByText(/type "Alice" to confirm/i)).not.toBeInTheDocument()
     })
   })
 
@@ -119,19 +119,16 @@ describe('DeleteUserConfirmModal', () => {
       await user.type(input, 'Alic')
 
       const deleteButton = screen.getByRole('button', { name: /permanently delete/i })
-      // Button should already be disabled, but we attempt to click anyway
       expect(deleteButton).toBeDisabled()
-      // Disabled buttons cannot be clicked via user interaction
-      // So we won't call user.click on a disabled button
+      expect(mockOnConfirm).not.toHaveBeenCalled()
     })
 
     it('should not call onConfirm when error is present', async () => {
-      const user = userEvent.setup()
       const { mockOnConfirm } = renderModal({ error: 'You cannot delete your own account' })
 
       const deleteButton = screen.getByRole('button', { name: /permanently delete/i })
       expect(deleteButton).toBeDisabled()
-      // Disabled buttons cannot be clicked via user interaction
+      expect(mockOnConfirm).not.toHaveBeenCalled()
     })
   })
 
@@ -148,9 +145,9 @@ describe('DeleteUserConfirmModal', () => {
 
     it('should call onCancel when backdrop is clicked', async () => {
       const user = userEvent.setup()
-      const { mockOnCancel } = renderModal()
+      const { container, mockOnCancel } = renderModal()
 
-      const backdrop = screen.getByRole('button', { name: /permanently delete/i }).closest('.confirm-dialog').parentElement
+      const backdrop = container.querySelector('.sheet-backdrop')
       await user.click(backdrop)
 
       expect(mockOnCancel).toHaveBeenCalledTimes(1)
@@ -159,33 +156,34 @@ describe('DeleteUserConfirmModal', () => {
 
   describe('rendering', () => {
     it('should display user name in the message', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal()
-      expect(screen.getByText('"Alice"')).toBeInTheDocument()
+      renderModal()
+      // Name appears inside a <strong> in the body copy
+      expect(screen.getByText('Alice', { selector: 'strong' })).toBeInTheDocument()
     })
 
     it('should display user name in the confirmation label', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal()
+      renderModal()
       expect(screen.getByText(/type "Alice" to confirm/i)).toBeInTheDocument()
     })
 
     it('should show confirmation input placeholder with user name', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal()
+      renderModal()
       expect(screen.getByPlaceholderText('Alice')).toBeInTheDocument()
     })
 
-    it('should display title "Delete user?"', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal()
-      expect(screen.getByText('Delete user?')).toBeInTheDocument()
+    it('should display title "Remove Alice?"', () => {
+      renderModal()
+      expect(screen.getByText('Remove Alice?')).toBeInTheDocument()
     })
 
     it('should display warning message about permanent deletion', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal()
-      expect(screen.getByText(/This action cannot be undone/i)).toBeInTheDocument()
+      renderModal()
+      expect(screen.getByText(/This can't be undone/i)).toBeInTheDocument()
     })
 
-    it('should display warning about gifts and claims removal', () => {
-      const { mockOnConfirm, mockOnCancel } = renderModal()
-      expect(screen.getByText(/All their gifts and claims will be removed/i)).toBeInTheDocument()
+    it('should display warning about the gift list removal', () => {
+      renderModal()
+      expect(screen.getByText(/entire gift\s+list/i)).toBeInTheDocument()
     })
   })
 })

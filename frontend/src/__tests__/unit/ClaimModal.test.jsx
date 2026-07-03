@@ -86,9 +86,7 @@ describe('ClaimModal', () => {
       ).toBeInTheDocument()
     })
 
-    it('should alert when confirming without a date', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
-
+    it('should show inline error when confirming without a date', async () => {
       render(
         <ClaimModal
           gift={mockGift}
@@ -102,10 +100,9 @@ describe('ClaimModal', () => {
       const confirmButton = screen.getByText("Confirm — I'll give this")
       fireEvent.click(confirmButton)
 
-      expect(alertSpy).toHaveBeenCalledWith('Please select a date')
+      // Inline error appears instead of a window.alert
+      expect(screen.getByText('Please pick a date')).toBeInTheDocument()
       expect(mockOnClaim).not.toHaveBeenCalled()
-
-      alertSpy.mockRestore()
     })
 
     it('should call onClaim with date when confirming with a date', async () => {
@@ -153,8 +150,8 @@ describe('ClaimModal', () => {
       const confirmButton = screen.getByText("Confirm — I'll give this")
       fireEvent.click(confirmButton)
 
-      // Button should show loading text and be disabled
-      expect(screen.getByText('Confirming...')).toBeDisabled()
+      // Primary button shows loading text and is disabled
+      expect(screen.getByText('Saving…')).toBeDisabled()
       expect(screen.getByText('Cancel')).toBeDisabled()
 
       await waitFor(() => {
@@ -190,13 +187,13 @@ describe('ClaimModal', () => {
         />
       )
 
-      const backdrop = screen.getByText("Confirm — I'll give this").closest('.modal-backdrop')
+      const backdrop = screen.getByText("Confirm — I'll give this").closest('.sheet-backdrop')
       fireEvent.click(backdrop)
 
       expect(mockOnClose).toHaveBeenCalled()
     })
 
-    it('should not close modal when clicking on modal sheet', () => {
+    it('should not close modal when clicking on sheet', () => {
       render(
         <ClaimModal
           gift={mockGift}
@@ -207,8 +204,8 @@ describe('ClaimModal', () => {
         />
       )
 
-      const modalSheet = document.querySelector('.modal-sheet')
-      fireEvent.click(modalSheet)
+      const sheet = document.querySelector('.sheet')
+      fireEvent.click(sheet)
 
       expect(mockOnClose).not.toHaveBeenCalled()
     })
@@ -276,31 +273,7 @@ describe('ClaimModal', () => {
       })
     })
 
-    it('should show confirmation dialog when clicking unclaim button', async () => {
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-
-      render(
-        <ClaimModal
-          gift={mockGift}
-          isEdit={true}
-          existingDate="2025-12-25"
-          onClaim={mockOnClaim}
-          onUnclaim={mockOnUnclaim}
-          onClose={mockOnClose}
-        />
-      )
-
-      const unclaimButton = screen.getByText("I didn't give this after all")
-      fireEvent.click(unclaimButton)
-
-      expect(confirmSpy).toHaveBeenCalledWith('Are you sure? This will un-claim the gift.')
-      expect(mockOnUnclaim).not.toHaveBeenCalled()
-
-      confirmSpy.mockRestore()
-    })
-
-    it('should call onUnclaim when confirming unclaim', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true)
+    it('should call onUnclaim directly when clicking unclaim button (no confirm dialog)', async () => {
       mockOnUnclaim.mockResolvedValue(undefined)
 
       render(
@@ -323,7 +296,6 @@ describe('ClaimModal', () => {
     })
 
     it('should disable all buttons while unclaiming', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true)
       mockOnUnclaim.mockImplementation(
         () => new Promise((resolve) => setTimeout(resolve, 100))
       )
@@ -342,8 +314,8 @@ describe('ClaimModal', () => {
       const unclaimButton = screen.getByText("I didn't give this after all")
       fireEvent.click(unclaimButton)
 
-      // All buttons should be disabled while loading
-      expect(screen.getByText('Updating...')).toBeDisabled()
+      // All buttons should be disabled while loading; primary shows "Saving…"
+      expect(screen.getByText('Saving…')).toBeDisabled()
       expect(screen.getByText('Cancel')).toBeDisabled()
       expect(screen.getByText("I didn't give this after all")).toBeDisabled()
 
@@ -352,9 +324,7 @@ describe('ClaimModal', () => {
       })
     })
 
-    it('should alert when updating without a date', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
-
+    it('should show inline error when updating without a date', async () => {
       render(
         <ClaimModal
           gift={mockGift}
@@ -372,10 +342,8 @@ describe('ClaimModal', () => {
       const updateButton = screen.getByText('Update date')
       fireEvent.click(updateButton)
 
-      expect(alertSpy).toHaveBeenCalledWith('Please select a date')
+      expect(screen.getByText('Please pick a date')).toBeInTheDocument()
       expect(mockOnClaim).not.toHaveBeenCalled()
-
-      alertSpy.mockRestore()
     })
 
     it('should render all three buttons in edit mode', () => {

@@ -56,44 +56,36 @@ export function computeEffectiveReceived(gift, claim, today = new Date()) {
  * @returns {boolean} true if the gift should be shown to the viewer
  */
 export function shouldShowGift(gift, viewerId, ownerId, isBlindContext, today = new Date()) {
-  const claims = gift.claims || []
-
-  // Blind context (owner or admin viewing/editing owner's list): show all gifts
+  // Blind context (owner viewing own list, or admin editing it): show everything.
+  // Received gifts are only ever visible in this context.
   if (isBlindContext) {
     return true
   }
 
-  // No claims: always show the gift
-  if (claims.length === 0) {
+  const claims = gift.claims || []
+
+  // The claimer always sees their own claim (even after it resolves) so they can edit/undo it.
+  if (claims.some(c => c.claimerUserId === viewerId)) {
     return true
   }
 
-  // Find if viewer has a claim on this gift
-  const viewerClaim = claims.find(c => c.claimerUserId === viewerId)
-
-  // If viewer is the claimer, always show
-  if (viewerClaim) {
-    return true
+  // Gifts the owner marked as received are private to the owner — never shown to others.
+  if (gift.manualReceived) {
+    return false
   }
 
-  // If repeatable gift, show to all viewers
+  // Repeatable gifts stay available to everyone regardless of others' claims.
   if (!gift.onlyOnce) {
     return true
   }
 
-  // Non-repeatable gift claimed by someone else:
-  // Show only if it's considered effectively received
-  for (const claim of claims) {
-    if (claim.claimerUserId !== viewerId) {
-      const isEffectivelyReceived = computeEffectiveReceived(gift, claim, today)
-      if (!isEffectivelyReceived) {
-        // Non-repeatable gift claimed by someone else and not yet received: hide it
-        return false
-      }
-    }
+  // Non-repeatable gift claimed by someone else: hidden from other viewers, both before and
+  // after the gift date resolves it to "received" (received items stay private to the owner).
+  if (claims.some(c => c.claimerUserId !== viewerId)) {
+    return false
   }
 
-  // Non-repeatable gift claimed by someone else, but effectively received: show it
+  // Unclaimed, not received: available to view and claim.
   return true
 }
 

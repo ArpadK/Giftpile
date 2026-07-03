@@ -1,20 +1,62 @@
 import React, { useEffect, useState } from 'react'
 import './GiftCard.css'
 
+/** Display a price with a leading euro sign, tolerating legacy values that already have a symbol. */
+function formatPrice(price) {
+  if (price == null || String(price).trim() === '') return ''
+  const amount = String(price).trim().replace(/^[€$£]\s*/, '')
+  return `€${amount}`
+}
+
+// Abstract gradient covers used when a gift has no fetched preview image. Keyed by gift id so
+// each gift consistently gets one and neighbours differ, keeping the list from looking sterile.
+const COVER_PALETTES = [
+  ['#4C5FE8', '#8B5CF6'],
+  ['#2EC4B6', '#4C5FE8'],
+  ['#F2A93B', '#FF6B6B'],
+  ['#FF8FB1', '#8B5CF6'],
+  ['#22C55E', '#2EC4B6'],
+  ['#FF6B6B', '#F2A93B'],
+]
+
+const COVER_SHAPES = [
+  [[60, 40, 70], [320, 120, 90], [210, 20, 40]],
+  [[340, 30, 80], [40, 120, 60], [180, 95, 50]],
+  [[200, 70, 95], [55, 110, 45], [350, 45, 55]],
+  [[100, 15, 55], [300, 105, 85], [225, 135, 40]],
+  [[30, 60, 75], [380, 80, 90], [205, 10, 30]],
+  [[360, 120, 75], [80, 25, 60], [245, 90, 45]],
+]
+
+function PlaceholderCover({ seed = 0 }) {
+  const i = Math.abs(seed) % COVER_PALETTES.length
+  const [c1, c2] = COVER_PALETTES[i]
+  const gid = `giftcover-${seed}-${i}`
+  return (
+    <svg className="gift-card__cover" viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={c1} />
+          <stop offset="1" stopColor={c2} />
+        </linearGradient>
+      </defs>
+      <rect width="400" height="140" fill={`url(#${gid})`} />
+      <g fill="#ffffff">
+        {COVER_SHAPES[i].map(([cx, cy, r], idx) => (
+          <circle key={idx} cx={cx} cy={cy} r={r} opacity={0.10 + idx * 0.04} />
+        ))}
+      </g>
+    </svg>
+  )
+}
+
 /**
- * GiftCard component (active state)
- *
- * Displays a gift with:
- * - Optional 140px cover image (fetched via link preview)
- * - Title + price chip
- * - Description and "View item" link
- * - Tag chips (exactColor: violet, exactProduct: violet, repeatable: teal)
- * - Action row (move-up, move-down, spacer, edit, mark-received, delete)
+ * GiftCard component.
  *
  * Variants:
- * - Owner view: show edit/delete/move buttons
- * - Viewer view: show "I'll get this one" button (if unclaimed) or "You're giving this" green bar
- * - Received state: 60% opacity, show undo button instead of edit/delete
+ * - Owner/admin active: edit/delete/move + mark-received controls
+ * - Viewer active: "I'll get this one" button, or a green "You're giving this" bar for own claim
+ * - Received: compact dimmed row with undo/delete (owner) or "You gave this — edit" (viewer)
  */
 export function GiftCard({
   gift,
@@ -27,57 +69,80 @@ export function GiftCard({
   isReceived = false,
   canMoveUp = true,
   canMoveDown = true,
-  viewerClaim = null, // For other-member-list: current viewer's claim on this gift, if any
+  viewerClaim = null, // For other-member list: current viewer's claim on this gift, if any
 }) {
   const [imageUrl, setImageUrl] = useState(null)
-  const [imageLoading, setImageLoading] = useState(false)
 
   useEffect(() => {
+    // Reset the preview whenever the link changes so a stale image never lingers when the new
+    // link has no fetchable image. `active` guards against an out-of-order in-flight response.
+    let active = true
+    setImageUrl(null)
+
     if (gift.link) {
-      fetchPreview()
+      ;(async () => {
+        try {
+          const encoded = encodeURIComponent(gift.link)
+          const response = await fetch(`/api/link-preview?url=${encoded}`, { credentials: 'include' })
+          if (response.ok) {
+            const data = await response.json()
+            if (active && data.imageUrl) setImageUrl(data.imageUrl)
+          }
+        } catch (err) {
+          console.error('Failed to fetch preview:', err)
+        }
+      })()
     }
+
+    return () => { active = false }
   }, [gift.link])
 
-  async function fetchPreview() {
-    try {
-      setImageLoading(true)
-      const encoded = encodeURIComponent(gift.link)
-      const response = await fetch(`/api/link-preview?url=${encoded}`, {
-        credentials: 'include',
-      })
-      if (response.ok) {
-        const data = await response.json()
-        if (data.imageUrl) {
-          setImageUrl(data.imageUrl)
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch preview:', err)
-    } finally {
-      setImageLoading(false)
-    }
+  // Compact received row (dimmed).
+  if (isReceived) {
+    return (
+      <div className="gift-card gift-card--received">
+        <div className="gift-card__received-main">
+          <div className="gift-card__received-title">{gift.title}</div>
+          <div className="gift-card__received-label">
+            {isOwner ? 'Marked as received' : 'Received'}
+          </div>
+        </div>
+        <div className="gift-card__received-actions">
+          {isOwner && (
+            <>
+              <button className="gift-card__undo-btn" onClick={() => onMarkReceived?.(false)}>Undo</button>
+              <button className="gift-card__delete-btn gift-card__delete-btn--sm" onClick={onDelete} aria-label="Delete" title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                </svg>
+              </button>
+            </>
+          )}
+          {!isOwner && viewerClaim && (
+            <button className="gift-card__edit-pill" onClick={onClaim}>You gave this — edit</button>
+          )}
+        </div>
+      </div>
+    )
   }
 
   const isRepeatable = !gift.onlyOnce
+  const hasTags = gift.exactColor || gift.exactProduct || isRepeatable
 
   return (
-    <div className={`gift-card ${isReceived ? 'gift-card--received' : ''}`}>
-      {imageUrl && (
-        <div className="gift-card__image-container">
-          <img src={imageUrl} alt={gift.title} className="gift-card__cover" />
-        </div>
-      )}
+    <div className={`gift-card${viewerClaim ? ' gift-card--claimed-by-me' : ''}`}>
+      <div className="gift-card__image-container">
+        {imageUrl
+          ? <img src={imageUrl} alt={gift.title} className="gift-card__cover" />
+          : <PlaceholderCover seed={gift.id} />}
+      </div>
 
       <div className="gift-card__content">
         <div className="gift-card__header">
-          <div className="gift-card__title-section">
-            <div className={`gift-card__title ${viewerClaim ? 'gift-card__title--claimed' : ''}`}>
-              {gift.title}
-            </div>
-            {gift.price && (
-              <div className="gift-card__price">{gift.price}</div>
-            )}
+          <div className={`gift-card__title${viewerClaim ? ' gift-card__title--claimed' : ''}`}>
+            {gift.title}
           </div>
+          {gift.price && <div className="gift-card__price">{formatPrice(gift.price)}</div>}
         </div>
 
         {gift.description && (
@@ -87,139 +152,79 @@ export function GiftCard({
         {gift.link && (
           <a href={gift.link} target="_blank" rel="noopener noreferrer" className="gift-card__link">
             View item
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 12L12 2M12 2H5M12 2V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 17L17 7M7 7h10v10" />
             </svg>
           </a>
         )}
 
-        {(gift.exactColor || gift.exactProduct || isRepeatable) && (
+        {hasTags && (
           <div className="gift-card__tags">
-            {gift.exactColor && (
-              <span className="gift-card__tag gift-card__tag--violet">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                  <circle cx="6" cy="6" r="4" />
-                </svg>
-                Exact color
-              </span>
-            )}
-            {gift.exactProduct && (
-              <span className="gift-card__tag gift-card__tag--violet">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                  <rect x="2" y="2" width="8" height="8" />
-                </svg>
-                Exact product
-              </span>
-            )}
-            {isRepeatable && (
-              <span className="gift-card__tag gift-card__tag--teal">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                  <path d="M6 1C3.24 1 1 3.24 1 6s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z" />
-                </svg>
-                Repeatable
-              </span>
-            )}
+            {gift.exactColor && <span className="gift-card__tag gift-card__tag--violet">Exact color</span>}
+            {gift.exactProduct && <span className="gift-card__tag gift-card__tag--violet">Exact product</span>}
+            {isRepeatable && <span className="gift-card__tag gift-card__tag--teal">Can give more than once</span>}
           </div>
         )}
 
-        {/* Owner view: edit/delete/move controls */}
-        {isOwner && !isReceived && (
+        {/* Owner / admin-edit: action row */}
+        {isOwner && (
           <div className="gift-card__actions">
             <button
-              className="gift-card__action-btn"
+              className="gift-card__move-btn"
               onClick={() => onMovePriority?.('up')}
               disabled={!canMoveUp}
-              title="Move up"
               aria-label="Move up"
+              title="Move up"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 12.5V3.5M4.5 7L8 3.5L11.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 15l-6-6-6 6" />
               </svg>
             </button>
-
             <button
-              className="gift-card__action-btn"
+              className="gift-card__move-btn"
               onClick={() => onMovePriority?.('down')}
               disabled={!canMoveDown}
-              title="Move down"
               aria-label="Move down"
+              title="Move down"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 3.5V12.5M4.5 9L8 12.5L11.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
               </svg>
             </button>
 
             <div className="gift-card__spacer" />
 
-            <button
-              className="gift-card__action-btn"
-              onClick={onEdit}
-              title="Edit"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M11.3 2.7L13.3 4.7M2 14h2l9-9-2-2-9 9v2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <button className="gift-card__icon-btn gift-card__icon-btn--edit" onClick={onEdit} aria-label="Edit" title="Edit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
               </svg>
             </button>
-
-            <button
-              className="gift-card__action-btn gift-card__action-btn--mark-received"
-              onClick={() => onMarkReceived?.(true)}
-              title="Mark as received"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13.3 4.3L6 11.6 2.7 8.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <button className="gift-card__icon-btn gift-card__icon-btn--received" onClick={() => onMarkReceived?.(true)} aria-label="Mark as received" title="Mark as received">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5" />
               </svg>
             </button>
-
-            <button
-              className="gift-card__action-btn gift-card__action-btn--delete"
-              onClick={onDelete}
-              title="Delete"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2 4h12M6.5 7v5M9.5 7v5M3.5 4l.5 9.5c0 .8.7 1.5 1.5 1.5h5c.8 0 1.5-.7 1.5-1.5L12.5 4M6 4V2.5c0-.3.2-.5.5-.5h3c.3 0 .5.2.5.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <button className="gift-card__icon-btn gift-card__icon-btn--delete" onClick={onDelete} aria-label="Delete" title="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               </svg>
             </button>
           </div>
         )}
 
-        {/* Received state: show undo button */}
-        {isOwner && isReceived && (
-          <div className="gift-card__actions">
-            <button className="gift-card__undo-btn" onClick={() => onMarkReceived?.(false)}>
-              Undo
-            </button>
-            <div className="gift-card__spacer" />
-            <button className="gift-card__delete-btn" onClick={onDelete} title="Delete">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2 4h12M6.5 7v5M9.5 7v5M3.5 4l.5 9.5c0 .8.7 1.5 1.5 1.5h5c.8 0 1.5-.7 1.5-1.5L12.5 4M6 4V2.5c0-.3.2-.5.5-.5h3c.3 0 .5.2.5.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+        {/* Viewer: own claim bar */}
+        {!isOwner && viewerClaim && (
+          <div className="gift-card__claim-bar">
+            <span className="gift-card__claim-bar-text">You're giving this · {viewerClaim.giftDate}</span>
+            <button className="gift-card__edit-pill gift-card__edit-pill--on-green" onClick={onClaim}>Edit</button>
           </div>
         )}
 
-        {/* Viewer view: unclaimed gift - show "I'll get this one" button */}
-        {!isOwner && !viewerClaim && !isReceived && (
+        {/* Viewer: unclaimed */}
+        {!isOwner && !viewerClaim && (
           <button className="gift-card__claim-btn" onClick={() => onClaim?.()}>
             I'll get this one
           </button>
-        )}
-
-        {/* Viewer view: viewer's own claim - show green bar + edit button */}
-        {!isOwner && viewerClaim && !isReceived && (
-          <>
-            <div className="gift-card__claim-bar">
-              <div className="gift-card__claim-bar-icon">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                  <path d="M11.7 3.3L5.5 9.5 2.3 6.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </svg>
-              </div>
-              <span>You're giving this ({viewerClaim.giftDate})</span>
-            </div>
-            <button className="gift-card__claim-btn" onClick={onClaim}>
-              Edit date
-            </button>
-          </>
         )}
       </div>
     </div>

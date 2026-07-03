@@ -1,27 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import './GiftFormModal.css'
+import './Sheet.css'
+
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+)
 
 /**
- * GiftFormModal
- *
- * Bottom-sheet modal for adding or editing a gift.
- *
- * Fields:
- * - Title (required)
- * - Link (optional)
- * - Price (optional)
- * - Notes / Description (optional)
- * - Checkboxes:
- *   * "Must be this exact color" (exactColor)
- *   * "Must be this exact product / brand" (exactProduct)
- *   * "Only give this once" (onlyOnce, default checked)
- *
- * Validation: title is required.
- *
- * Props:
- * - gift: optional existing gift for edit mode
- * - onSave: callback(formData)
- * - onClose: callback for cancel/backdrop click
+ * GiftFormModal — bottom-sheet for adding or editing a gift.
+ * Fields: Title (required), Link, Price, Notes, and three checkboxes
+ * (exact color, exact product/brand, only give once — default checked).
  */
 export function GiftFormModal({ gift, onSave, onClose }) {
   const [formData, setFormData] = useState({
@@ -33,9 +22,8 @@ export function GiftFormModal({ gift, onSave, onClose }) {
     exactProduct: false,
     onlyOnce: true,
   })
-  const [errors, setErrors] = useState({})
+  const [error, setError] = useState('')
 
-  // Pre-fill form if editing an existing gift
   useEffect(() => {
     if (gift) {
       setFormData({
@@ -45,169 +33,98 @@ export function GiftFormModal({ gift, onSave, onClose }) {
         description: gift.description || '',
         exactColor: gift.exactColor || false,
         exactProduct: gift.exactProduct || false,
-        onlyOnce: gift.onlyOnce !== false, // default true
+        onlyOnce: gift.onlyOnce !== false,
       })
     }
   }, [gift])
 
-  function handleChange(e) {
-    const { name, value, type, checked } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-    // Clear error for this field when user starts editing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
+  function setField(name, value) {
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  function validate() {
-    const newErrors = {}
-    if (!formData.title || formData.title.trim() === '') {
-      newErrors.title = 'Title is required'
-    }
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  function toggle(name) {
+    setFormData(prev => ({ ...prev, [name]: !prev[name] }))
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!validate()) {
+  function handleSubmit() {
+    if (!formData.title.trim()) {
+      setError('Title is required')
+      return
+    }
+    if (!String(formData.price).trim()) {
+      setError('Price is required')
       return
     }
     onSave(formData)
   }
 
+  const checkbox = (name, label, hint) => (
+    <div className="sheet__check-row" onClick={() => toggle(name)}>
+      <div className={`sheet__check-box${formData[name] ? ' sheet__check-box--checked' : ''}`}>
+        {formData[name] && <CheckIcon />}
+      </div>
+      <div className="sheet__check-label">
+        {label}{hint && <span className="sheet__check-hint"> {hint}</span>}
+      </div>
+    </div>
+  )
+
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-sheet__header">
-          <h2 className="modal-sheet__title">
-            {gift ? 'Edit gift idea' : 'Add a gift idea'}
-          </h2>
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet__title">{gift ? 'Edit gift idea' : 'Add a gift idea'}</div>
+
+        <label className="sheet__label">Title *</label>
+        <input
+          className="sheet__input"
+          type="text"
+          value={formData.title}
+          onChange={(e) => setField('title', e.target.value)}
+          placeholder="e.g. Wool socks"
+          autoFocus
+        />
+
+        <label className="sheet__label">Link (optional)</label>
+        <input
+          className="sheet__input"
+          type="url"
+          value={formData.link}
+          onChange={(e) => setField('link', e.target.value)}
+          placeholder="https://..."
+        />
+
+        <label className="sheet__label">Price (€) *</label>
+        <input
+          className="sheet__input"
+          type="number"
+          min="0"
+          step="0.01"
+          value={formData.price}
+          onChange={(e) => setField('price', e.target.value)}
+          placeholder="e.g. 25"
+        />
+
+        <label className="sheet__label">Notes (optional)</label>
+        <textarea
+          className="sheet__textarea"
+          rows="3"
+          value={formData.description}
+          onChange={(e) => setField('description', e.target.value)}
+          placeholder="Any extra detail..."
+        />
+
+        {checkbox('exactColor', 'Must be this exact color')}
+        {checkbox('exactProduct', 'Must be this exact product / brand')}
+        {checkbox('onlyOnce', 'Only give this once', '(uncheck for things like socks)')}
+
+        {error && <div className="sheet__error">{error}</div>}
+
+        <div className="sheet__actions sheet__actions--spaced">
+          <button className="sheet__btn sheet__btn--primary" onClick={handleSubmit}>
+            {gift ? 'Save changes' : 'Add gift'}
+          </button>
+          <button className="sheet__btn sheet__btn--cancel" onClick={onClose}>Cancel</button>
         </div>
-
-        <form className="modal-sheet__form" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label className="form-field__label" htmlFor="title">
-              Title *
-            </label>
-            <input
-              id="title"
-              type="text"
-              name="title"
-              className="form-field__input"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="What do you want?"
-            />
-            {errors.title && (
-              <div className="form-field__error">{errors.title}</div>
-            )}
-          </div>
-
-          <div className="form-field">
-            <label className="form-field__label" htmlFor="link">
-              Link
-            </label>
-            <input
-              id="link"
-              type="url"
-              name="link"
-              className="form-field__input"
-              value={formData.link}
-              onChange={handleChange}
-              placeholder="https://example.com"
-            />
-          </div>
-
-          <div className="form-field">
-            <label className="form-field__label" htmlFor="price">
-              Price
-            </label>
-            <input
-              id="price"
-              type="text"
-              name="price"
-              className="form-field__input"
-              value={formData.price}
-              onChange={handleChange}
-              placeholder="$50"
-            />
-          </div>
-
-          <div className="form-field">
-            <label className="form-field__label" htmlFor="description">
-              Notes
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              className="form-field__textarea"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Any special details?"
-            />
-          </div>
-
-          <div className="checkbox-group">
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                name="exactColor"
-                className="checkbox-field__input"
-                checked={formData.exactColor}
-                onChange={handleChange}
-              />
-              <span className="checkbox-field__label">
-                Must be this exact color
-              </span>
-            </label>
-
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                name="exactProduct"
-                className="checkbox-field__input"
-                checked={formData.exactProduct}
-                onChange={handleChange}
-              />
-              <span className="checkbox-field__label">
-                Must be this exact product / brand
-              </span>
-            </label>
-
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                name="onlyOnce"
-                className="checkbox-field__input"
-                checked={formData.onlyOnce}
-                onChange={handleChange}
-              />
-              <span className="checkbox-field__label">
-                Only give this once
-              </span>
-            </label>
-          </div>
-
-          <div className="modal-sheet__actions">
-            <button
-              type="button"
-              className="modal-sheet__btn modal-sheet__btn--secondary"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="modal-sheet__btn modal-sheet__btn--primary"
-            >
-              {gift ? 'Save changes' : 'Add gift'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   )

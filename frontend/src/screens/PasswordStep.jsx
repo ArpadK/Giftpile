@@ -53,8 +53,9 @@ export function PasswordStep() {
     <div className="password-step">
       <div className="password-step__container">
         <button className="back-link" onClick={() => navigate('/')}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
           </svg>
           Not {user.name}?
         </button>
@@ -67,13 +68,16 @@ export function PasswordStep() {
         </div>
 
         <form onSubmit={handleSignIn} className="form">
+          <label className="form__label" htmlFor="password">Password</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder="••••••••"
             disabled={loading}
             className="input"
+            autoFocus
           />
           {error && <p className="error-text">{error}</p>}
           <button type="submit" disabled={loading} className="button-primary">

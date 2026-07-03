@@ -5,6 +5,7 @@ import { TopBar } from '../components/TopBar'
 import { GiftCard } from '../components/GiftCard'
 import { ClaimModal } from '../components/ClaimModal'
 import { GiftFormModal } from '../components/GiftFormModal'
+import { GiftDeleteConfirmModal } from '../components/GiftDeleteConfirmModal'
 import './GiftList.css'
 
 /**
@@ -60,27 +61,23 @@ export function GiftList() {
     }
   }
 
-  // Get owner name from first user in the list
+  // Resolve the list owner's name for the header (when viewing someone else's list).
   useEffect(() => {
-    if (!isOwner && gifts.length === 0 && !loading) {
-      // Fetch owner name
-      async function loadOwner() {
-        try {
-          const res = await fetch(`/api/users`, {
-            credentials: 'include',
-          })
-          if (res.ok) {
-            const users = await res.json()
-            const owner = users.find(u => u.id === targetUserId)
-            if (owner) setOwnerName(owner.name)
-          }
-        } catch (err) {
-          console.error('Failed to fetch owner:', err)
+    if (isOwner || !targetUserId) return
+    async function loadOwner() {
+      try {
+        const res = await fetch(`/api/users`, { credentials: 'include' })
+        if (res.ok) {
+          const users = await res.json()
+          const owner = users.find(u => u.id === targetUserId)
+          if (owner) setOwnerName(owner.name)
         }
+      } catch (err) {
+        console.error('Failed to fetch owner:', err)
       }
-      loadOwner()
     }
-  }, [isOwner, targetUserId, gifts.length, loading])
+    loadOwner()
+  }, [isOwner, targetUserId])
 
   const activeGifts = gifts.filter(g => !g.manualReceived && !g.effectiveReceived)
   const receivedGifts = gifts.filter(g => g.manualReceived || g.effectiveReceived)
@@ -223,13 +220,14 @@ export function GiftList() {
     }
   }
 
-  const screenTitle = isOwner ? 'My gift list' : `${ownerName || 'Family member'}'s gifts`
+  const screenTitle = isOwner ? 'My gift list' : (ownerName || 'Gift list')
+  const screenSubtitle = isOwner ? null : 'Their gift ideas'
   const backTo = isAdminEdit ? '/admin' : '/home'
 
   if (loading) {
     return (
       <div className="gift-list">
-        <TopBar title={screenTitle} showBack backTo={backTo} />
+        <TopBar title={screenTitle} subtitle={screenSubtitle} showBack backTo={backTo} />
         <div className="gift-list__content">Loading...</div>
       </div>
     )
@@ -245,7 +243,7 @@ export function GiftList() {
           <span>Admin mode — you're editing someone else's list. You can't see who will receive which gift.</span>
         </div>
       )}
-      <TopBar title={screenTitle} showBack backTo={backTo} />
+      <TopBar title={screenTitle} subtitle={screenSubtitle} showBack backTo={backTo} />
 
       <div className="gift-list__content">
         {/* Add button (owner or admin-edit) */}
@@ -361,29 +359,13 @@ export function GiftList() {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       {(isOwner || isAdminEdit) && showDeleteConfirm && (
-        <>
-          <div className="modal-backdrop" onClick={() => setShowDeleteConfirm(null)} />
-          <div className="confirm-dialog">
-            <h3 className="confirm-dialog__title">Delete "{showDeleteConfirm.title}"?</h3>
-            <div className="confirm-dialog__actions">
-              <button
-                className="btn secondary"
-                onClick={() => setShowDeleteConfirm(null)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn primary"
-                style={{ backgroundColor: 'var(--color-danger)' }}
-                onClick={() => handleDeleteGift(showDeleteConfirm.id)}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        </>
+        <GiftDeleteConfirmModal
+          gift={showDeleteConfirm}
+          onConfirm={() => handleDeleteGift(showDeleteConfirm.id)}
+          onCancel={() => setShowDeleteConfirm(null)}
+        />
       )}
     </div>
   )

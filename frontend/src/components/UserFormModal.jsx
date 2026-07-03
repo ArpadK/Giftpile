@@ -1,160 +1,78 @@
 import React, { useState, useEffect } from 'react'
-import './UserFormModal.css'
+import './Sheet.css'
+
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+)
 
 /**
- * UserFormModal
- *
- * Bottom-sheet modal for adding or editing a user.
- *
- * Fields:
- * - Name (required)
- * - Password (required for new, optional for edit — leave blank to keep current)
- * - Is Admin (checkbox)
- *
- * Props:
- * - user: optional existing user for edit mode
- * - onSave: callback(formData)
- * - onClose: callback for cancel/backdrop click
+ * UserFormModal — bottom-sheet for adding or editing a family member.
+ * Name, Password (required for new; blank keeps current when editing), and Admin access.
  */
 export function UserFormModal({ user, onSave, onClose }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    password: '',
-    isAdmin: false,
-  })
-  const [errors, setErrors] = useState({})
+  const [formData, setFormData] = useState({ name: '', password: '', isAdmin: false })
+  const [error, setError] = useState('')
 
-  // Pre-fill form if editing an existing user
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name || '',
-        password: '',
-        isAdmin: user.isAdmin || false,
-      })
+      setFormData({ name: user.name || '', password: '', isAdmin: user.isAdmin || false })
     }
   }, [user])
 
-  function handleChange(e) {
-    const { name, value, type, checked } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-    // Clear error for this field when user starts editing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  function validate() {
-    const newErrors = {}
-    if (!formData.name || formData.name.trim() === '') {
-      newErrors.name = 'Name is required'
-    }
-    if (!user && (!formData.password || formData.password.trim() === '')) {
-      newErrors.password = 'Password is required for new users'
-    }
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!validate()) {
+  function handleSubmit() {
+    if (!formData.name.trim()) {
+      setError('Name is required')
       return
     }
-
-    // Only include password if provided
-    const payload = {
-      name: formData.name,
-      isAdmin: formData.isAdmin,
+    if (!user && !formData.password) {
+      setError('Password is required for new users')
+      return
     }
-    if (formData.password) {
-      payload.password = formData.password
-    }
-
+    const payload = { name: formData.name.trim(), isAdmin: formData.isAdmin }
+    if (formData.password) payload.password = formData.password
     onSave(payload)
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-sheet__header">
-          <h2 className="modal-sheet__title">
-            {user ? 'Edit family member' : 'Add family member'}
-          </h2>
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet__title">{user ? 'Edit family member' : 'Add family member'}</div>
+
+        <label className="sheet__label">Name</label>
+        <input
+          className="sheet__input"
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+          placeholder="Enter name"
+          autoFocus
+        />
+
+        <label className="sheet__label">Password{user && ' (leave blank to keep current)'}</label>
+        <input
+          className="sheet__input"
+          type="password"
+          autoComplete="new-password"
+          value={formData.password}
+          onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))}
+          placeholder={user ? 'Leave blank to keep current' : 'Enter password'}
+        />
+
+        <div className="sheet__check-row" onClick={() => setFormData(p => ({ ...p, isAdmin: !p.isAdmin }))}>
+          <div className={`sheet__check-box${formData.isAdmin ? ' sheet__check-box--checked' : ''}`}>
+            {formData.isAdmin && <CheckIcon />}
+          </div>
+          <div className="sheet__check-label">Admin access</div>
         </div>
 
-        <form className="modal-sheet__form" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label className="form-field__label" htmlFor="name">
-              Name *
-            </label>
-            <input
-              id="name"
-              type="text"
-              name="name"
-              className="form-field__input"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter name"
-            />
-            {errors.name && (
-              <div className="form-field__error">{errors.name}</div>
-            )}
-          </div>
+        {error && <div className="sheet__error">{error}</div>}
 
-          <div className="form-field">
-            <label className="form-field__label" htmlFor="password">
-              Password {!user && '*'}
-            </label>
-            <input
-              id="password"
-              type="password"
-              name="password"
-              autoComplete="new-password"
-              className="form-field__input"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder={user ? 'Leave blank to keep current' : 'Enter password'}
-            />
-            {errors.password && (
-              <div className="form-field__error">{errors.password}</div>
-            )}
-          </div>
-
-          <div className="checkbox-group">
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                name="isAdmin"
-                className="checkbox-field__input"
-                checked={formData.isAdmin}
-                onChange={handleChange}
-              />
-              <span className="checkbox-field__label">
-                Is admin
-              </span>
-            </label>
-          </div>
-
-          <div className="modal-sheet__actions">
-            <button
-              type="button"
-              className="modal-sheet__btn modal-sheet__btn--secondary"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="modal-sheet__btn modal-sheet__btn--primary"
-            >
-              {user ? 'Save changes' : 'Add member'}
-            </button>
-          </div>
-        </form>
+        <div className="sheet__actions sheet__actions--spaced">
+          <button className="sheet__btn sheet__btn--primary" onClick={handleSubmit}>Save</button>
+          <button className="sheet__btn sheet__btn--cancel" onClick={onClose}>Cancel</button>
+        </div>
       </div>
     </div>
   )

@@ -1,0 +1,207 @@
+/* Shared bottom-sheet modal styling (matches the design handoff: all modals slide up from
+   the bottom, rounded top corners, dim backdrop). */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 30, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+  animation: sheetFade var(--duration-fast) var(--easing-standard);
+}
+
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border-radius: 24px 24px 0 0;
+  padding: 22px 20px calc(24px + env(safe-area-inset-bottom));
+  animation: sheetPop var(--duration-standard) var(--easing-standard);
+}
+
+.sheet__title {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-heading-lg);
+  margin-bottom: 18px;
+}
+
+.sheet__title--tight {
+  margin-bottom: 8px;
+}
+
+.sheet__text {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.sheet__text--tight {
+  margin-bottom: 16px;
+}
+
+.sheet__label {
+  display: block;
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.sheet__input,
+.sheet__textarea {
+  width: 100%;
+  padding: 13px 15px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: var(--font-size-body);
+  margin-bottom: 14px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.sheet__textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.sheet__input:focus,
+.sheet__textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.sheet__error {
+  color: var(--color-danger);
+  font-size: var(--font-size-label);
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+/* Custom checkbox rows */
+.sheet__check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  cursor: pointer;
+}
+
+.sheet__check-box {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 2px solid var(--color-border);
+  background: transparent;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--duration-fast) var(--easing-standard);
+}
+
+.sheet__check-box--checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.sheet__check-label {
+  font-size: 14.5px;
+}
+
+.sheet__check-hint {
+  color: var(--color-text-muted);
+}
+
+/* Icon badge (confirm modals) */
+.sheet__icon-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.sheet__icon-badge--amber {
+  background: var(--color-amber-soft);
+  color: var(--color-amber-text);
+}
+
+.sheet__icon-badge--danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+/* Action buttons (stacked, full width) */
+.sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet__actions--spaced {
+  margin-top: 18px;
+}
+
+.sheet__btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+}
+
+.sheet__btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.sheet__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sheet__btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.sheet__btn--danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.sheet__btn--danger-soft {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: 14px;
+  padding: 13px;
+}
+
+.sheet__btn--cancel {
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  padding: 13px;
+}
+
+@keyframes sheetFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheetPop {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

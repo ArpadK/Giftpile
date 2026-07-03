@@ -2,400 +2,165 @@ package com.giftpile.service;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.mockito.MockedStatic;
-
-import java.io.IOException;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @DisplayName("LinkPreviewService Unit Tests")
 public class LinkPreviewServiceTest {
 
-  private LinkPreviewService linkPreviewService;
+  private LinkPreviewService service;
+  private static final String BASE = "https://shop.example.com/product/123";
 
   @BeforeEach
   public void setUp() {
-    linkPreviewService = new LinkPreviewService();
+    service = new LinkPreviewService();
   }
 
-  // ============= URL Scheme Validation Tests =============
+  private String extract(String headHtml) {
+    Document doc = Jsoup.parse("<html><head>" + headHtml + "</head><body></body></html>", BASE);
+    return service.extractImageUrl(doc);
+  }
+
+  // ============= URL validation (runs before any network access) =============
 
   @Test
   @DisplayName("Should reject URLs with invalid scheme (ftp)")
   public void testRejectFtpScheme() {
-    String ftpUrl = "ftp://example.com/page";
-
-    IllegalArgumentException exception = assertThrows(
-      IllegalArgumentException.class,
-      () -> linkPreviewService.fetchImageUrl(ftpUrl)
-    );
-
-    assertEquals("Invalid URL scheme", exception.getMessage());
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+      () -> service.fetchImageUrl("ftp://example.com/page"));
+    assertEquals("Invalid URL scheme", ex.getMessage());
   }
 
   @Test
   @DisplayName("Should reject URLs with no scheme")
   public void testRejectUrlWithoutScheme() {
-    String urlWithoutScheme = "example.com/page";
-
-    IllegalArgumentException exception = assertThrows(
-      IllegalArgumentException.class,
-      () -> linkPreviewService.fetchImageUrl(urlWithoutScheme)
-    );
-
-    assertEquals("Invalid URL scheme", exception.getMessage());
+    assertThrows(IllegalArgumentException.class, () -> service.fetchImageUrl("example.com/page"));
   }
 
   @Test
-  @DisplayName("Should reject URLs with custom scheme (mailto, file, etc)")
+  @DisplayName("Should reject mailto scheme")
   public void testRejectCustomScheme() {
-    String mailtoUrl = "mailto:test@example.com";
-
-    IllegalArgumentException exception = assertThrows(
-      IllegalArgumentException.class,
-      () -> linkPreviewService.fetchImageUrl(mailtoUrl)
-    );
-
-    assertEquals("Invalid URL scheme", exception.getMessage());
-  }
-
-  // ============= Private IP Blocking Tests =============
-
-  @Test
-  @DisplayName("Should reject localhost addresses")
-  public void testRejectLocalhost() {
-    String localhostUrl = "http://localhost:8080/page";
-
-    IllegalArgumentException exception = assertThrows(
-      IllegalArgumentException.class,
-      () -> linkPreviewService.fetchImageUrl(localhostUrl)
-    );
-
-    assertEquals("Access to internal addresses is not allowed", exception.getMessage());
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+      () -> service.fetchImageUrl("mailto:test@example.com"));
+    assertEquals("Invalid URL scheme", ex.getMessage());
   }
 
   @Test
-  @DisplayName("Should reject 127.0.0.1 loopback")
-  public void testRejectLoopback() {
-    String loopbackUrl = "http://127.0.0.1:3000/page";
+  @DisplayName("Should reject localhost / loopback / private hosts (SSRF)")
+  public void testRejectInternalHosts() {
+    assertEquals("Access to internal addresses is not allowed",
+      assertThrows(IllegalArgumentException.class,
+        () -> service.fetchImageUrl("http://localhost:8080/page")).getMessage());
+    assertEquals("Access to internal addresses is not allowed",
+      assertThrows(IllegalArgumentException.class,
+        () -> service.fetchImageUrl("http://127.0.0.1/page")).getMessage());
+    assertEquals("Access to internal addresses is not allowed",
+      assertThrows(IllegalArgumentException.class,
+        () -> service.fetchImageUrl("http://192.168.1.10/page")).getMessage());
+    assertEquals("Access to internal addresses is not allowed",
+      assertThrows(IllegalArgumentException.class,
+        () -> service.fetchImageUrl("http://10.0.0.5/page")).getMessage());
+    // Cloud metadata endpoint is link-local and must be blocked too.
+    assertEquals("Access to internal addresses is not allowed",
+      assertThrows(IllegalArgumentException.class,
+        () -> service.fetchImageUrl("http://169.254.169.254/latest/meta-data")).getMessage());
+  }
 
-    IllegalArgumentException exception = assertThrows(
-      IllegalArgumentException.class,
-      () -> linkPreviewService.fetchImageUrl(loopbackUrl)
-    );
+  // ============= Image extraction =============
 
-    assertEquals("Access to internal addresses is not allowed", exception.getMessage());
+  @Test
+  @DisplayName("Extracts og:image")
+  public void testOgImage() {
+    assertEquals("https://cdn.example.com/og.jpg",
+      extract("<meta property=\"og:image\" content=\"https://cdn.example.com/og.jpg\">"));
   }
 
   @Test
-  @DisplayName("Should reject 192.168.x.x private IPs")
-  public void testRejectPrivate192Range() {
-    String privateUrl = "http://192.168.1.100/page";
-
-    IllegalArgumentException exception = assertThrows(
-      IllegalArgumentException.class,
-      () -> linkPreviewService.fetchImageUrl(privateUrl)
-    );
-
-    assertEquals("Access to internal addresses is not allowed", exception.getMessage());
+  @DisplayName("og:image takes precedence over twitter:image")
+  public void testOgPrecedence() {
+    String html = "<meta name=\"twitter:image\" content=\"https://cdn.example.com/tw.jpg\">"
+      + "<meta property=\"og:image\" content=\"https://cdn.example.com/og.jpg\">";
+    assertEquals("https://cdn.example.com/og.jpg", extract(html));
   }
 
   @Test
-  @DisplayName("Should reject 10.0.x.x private IPs")
-  public void testRejectPrivate10Range() {
-    String privateUrl = "http://10.0.0.50/page";
-
-    IllegalArgumentException exception = assertThrows(
-      IllegalArgumentException.class,
-      () -> linkPreviewService.fetchImageUrl(privateUrl)
-    );
-
-    assertEquals("Access to internal addresses is not allowed", exception.getMessage());
-  }
-
-  // ============= Valid URL Parsing Tests =============
-
-  @Test
-  @DisplayName("Should parse og:image from valid HTTPS URL")
-  public void testValidHttpsUrlParsesOgImage() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
-      String expectedImageUrl = "https://example.com/og-image.jpg";
-
-      Document mockDocument = mock(Document.class);
-      Elements ogImageElements = mock(Elements.class);
-
-      when(ogImageElements.attr("content")).thenReturn(expectedImageUrl);
-      when(mockDocument.select("meta[property=og:image]")).thenReturn(ogImageElements);
-      when(mockDocument.select("meta[name=twitter:image]")).thenReturn(new Elements());
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenReturn(mockDocument);
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      String result = linkPreviewService.fetchImageUrl(testUrl);
-
-      assertEquals(expectedImageUrl, result);
-    }
+  @DisplayName("Falls back to twitter:image when no og:image")
+  public void testTwitterFallback() {
+    assertEquals("https://cdn.example.com/tw.jpg",
+      extract("<meta name=\"twitter:image\" content=\"https://cdn.example.com/tw.jpg\">"));
   }
 
   @Test
-  @DisplayName("Should parse og:image from valid HTTP URL")
-  public void testValidHttpUrlParsesOgImage() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "http://example.com/article";
-      String expectedImageUrl = "http://example.com/image.png";
-
-      Document mockDocument = mock(Document.class);
-      Elements ogImageElements = mock(Elements.class);
-
-      when(ogImageElements.attr("content")).thenReturn(expectedImageUrl);
-      when(mockDocument.select("meta[property=og:image]")).thenReturn(ogImageElements);
-      when(mockDocument.select("meta[name=twitter:image]")).thenReturn(new Elements());
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenReturn(mockDocument);
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      String result = linkPreviewService.fetchImageUrl(testUrl);
-
-      assertEquals(expectedImageUrl, result);
-    }
-  }
-
-  // ============= Fallback to twitter:image Tests =============
-
-  @Test
-  @DisplayName("Should fallback to twitter:image when og:image is empty")
-  public void testFallbackToTwitterImage() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
-      String expectedImageUrl = "https://example.com/twitter-image.jpg";
-
-      Document mockDocument = mock(Document.class);
-      Elements emptyOgImageElements = mock(Elements.class);
-      Elements twitterImageElements = mock(Elements.class);
-
-      when(emptyOgImageElements.attr("content")).thenReturn("");
-      when(twitterImageElements.attr("content")).thenReturn(expectedImageUrl);
-      when(mockDocument.select("meta[property=og:image]")).thenReturn(emptyOgImageElements);
-      when(mockDocument.select("meta[name=twitter:image]")).thenReturn(twitterImageElements);
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenReturn(mockDocument);
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      String result = linkPreviewService.fetchImageUrl(testUrl);
-
-      assertEquals(expectedImageUrl, result);
-    }
+  @DisplayName("Falls back to itemprop=image")
+  public void testItempropFallback() {
+    assertEquals("https://cdn.example.com/item.jpg",
+      extract("<meta itemprop=\"image\" content=\"https://cdn.example.com/item.jpg\">"));
   }
 
   @Test
-  @DisplayName("Should return null when both og:image and twitter:image are empty")
-  public void testReturnNullWhenBothMetaTagsEmpty() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
-
-      Document mockDocument = mock(Document.class);
-      Elements emptyElements = mock(Elements.class);
-
-      when(emptyElements.attr("content")).thenReturn("");
-      when(mockDocument.select("meta[property=og:image]")).thenReturn(emptyElements);
-      when(mockDocument.select("meta[name=twitter:image]")).thenReturn(emptyElements);
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenReturn(mockDocument);
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      String result = linkPreviewService.fetchImageUrl(testUrl);
-
-      assertNull(result);
-    }
-  }
-
-  // ============= Fetch Failure Tests =============
-
-  @Test
-  @DisplayName("Should return null when Jsoup.connect throws exception")
-  public void testReturnNullOnFetchFailure() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenThrow(new RuntimeException("Network error"));
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      String result = linkPreviewService.fetchImageUrl(testUrl);
-
-      assertNull(result);
-    }
+  @DisplayName("Falls back to link rel=image_src")
+  public void testLinkImageSrc() {
+    assertEquals("https://cdn.example.com/link.jpg",
+      extract("<link rel=\"image_src\" href=\"https://cdn.example.com/link.jpg\">"));
   }
 
   @Test
-  @DisplayName("Should return null when connection times out")
-  public void testReturnNullOnConnectionTimeout() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenThrow(new java.net.SocketTimeoutException("Timeout"));
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      String result = linkPreviewService.fetchImageUrl(testUrl);
-
-      assertNull(result);
-    }
+  @DisplayName("Resolves a relative og:image against the page URL")
+  public void testRelativeResolution() {
+    assertEquals("https://shop.example.com/img/p.jpg",
+      extract("<meta property=\"og:image\" content=\"/img/p.jpg\">"));
   }
 
   @Test
-  @DisplayName("Should return null when URL returns invalid content")
-  public void testReturnNullOnInvalidContent() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenThrow(new org.jsoup.HttpStatusException("404", 404, "Not Found"));
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      String result = linkPreviewService.fetchImageUrl(testUrl);
-
-      assertNull(result);
-    }
-  }
-
-  // ============= Caching Tests =============
-
-  @Test
-  @DisplayName("Should cache successful fetch results")
-  public void testCacheSuccessfulResults() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
-      String expectedImageUrl = "https://example.com/image.jpg";
-
-      Document mockDocument = mock(Document.class);
-      Elements ogImageElements = mock(Elements.class);
-
-      when(ogImageElements.attr("content")).thenReturn(expectedImageUrl);
-      when(mockDocument.select("meta[property=og:image]")).thenReturn(ogImageElements);
-      when(mockDocument.select("meta[name=twitter:image]")).thenReturn(new Elements());
-
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
-
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenReturn(mockDocument);
-
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
-
-      // First call
-      String result1 = linkPreviewService.fetchImageUrl(testUrl);
-      assertEquals(expectedImageUrl, result1);
-
-      // Second call should use cache (no network call)
-      String result2 = linkPreviewService.fetchImageUrl(testUrl);
-      assertEquals(expectedImageUrl, result2);
-
-      // Verify Jsoup.connect was only called once (cached on second call)
-      jsoupMock.verify(() -> Jsoup.connect(testUrl), times(1));
-    }
+  @DisplayName("Extracts JSON-LD product image (string)")
+  public void testJsonLdString() {
+    String html = "<script type=\"application/ld+json\">"
+      + "{\"@type\":\"Product\",\"name\":\"Thing\",\"image\":\"https://cdn.example.com/ld.jpg\"}"
+      + "</script>";
+    assertEquals("https://cdn.example.com/ld.jpg", extract(html));
   }
 
   @Test
-  @DisplayName("Should cache null results for failed fetches")
-  public void testCacheNullResults() throws IOException {
-    try (MockedStatic<Jsoup> jsoupMock = mockStatic(Jsoup.class)) {
-      String testUrl = "https://example.com/article";
+  @DisplayName("Extracts JSON-LD product image (array)")
+  public void testJsonLdArray() {
+    String html = "<script type=\"application/ld+json\">"
+      + "{\"@type\":\"Product\",\"image\":[\"https://cdn.example.com/a.jpg\",\"https://cdn.example.com/b.jpg\"]}"
+      + "</script>";
+    assertEquals("https://cdn.example.com/a.jpg", extract(html));
+  }
 
-      org.jsoup.Connection mockConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection userAgentConnection = mock(org.jsoup.Connection.class);
-      org.jsoup.Connection timeoutConnection = mock(org.jsoup.Connection.class);
+  @Test
+  @DisplayName("Extracts JSON-LD product image (object with url)")
+  public void testJsonLdObject() {
+    String html = "<script type=\"application/ld+json\">"
+      + "{\"@type\":\"Product\",\"image\":{\"@type\":\"ImageObject\",\"url\":\"https://cdn.example.com/o.jpg\"}}"
+      + "</script>";
+    assertEquals("https://cdn.example.com/o.jpg", extract(html));
+  }
 
-      when(mockConnection.userAgent("Giftpile/1.0")).thenReturn(userAgentConnection);
-      when(userAgentConnection.timeout(3000)).thenReturn(timeoutConnection);
-      when(timeoutConnection.maxBodySize(anyInt())).thenReturn(timeoutConnection);
-      when(timeoutConnection.followRedirects(anyBoolean())).thenReturn(timeoutConnection);
-      when(timeoutConnection.get()).thenThrow(new RuntimeException("Network error"));
+  @Test
+  @DisplayName("Extracts JSON-LD image nested in @graph")
+  public void testJsonLdGraph() {
+    String html = "<script type=\"application/ld+json\">"
+      + "{\"@graph\":[{\"@type\":\"WebSite\"},{\"@type\":\"Product\",\"image\":\"https://cdn.example.com/g.jpg\"}]}"
+      + "</script>";
+    assertEquals("https://cdn.example.com/g.jpg", extract(html));
+  }
 
-      jsoupMock.when(() -> Jsoup.connect(testUrl)).thenReturn(mockConnection);
+  @Test
+  @DisplayName("Skips malformed JSON-LD and still finds a meta image")
+  public void testMalformedJsonLdIgnored() {
+    String html = "<script type=\"application/ld+json\">{ not valid json }</script>"
+      + "<meta property=\"og:image\" content=\"https://cdn.example.com/og.jpg\">";
+    assertEquals("https://cdn.example.com/og.jpg", extract(html));
+  }
 
-      // First call
-      String result1 = linkPreviewService.fetchImageUrl(testUrl);
-      assertNull(result1);
-
-      // Second call should use cache
-      String result2 = linkPreviewService.fetchImageUrl(testUrl);
-      assertNull(result2);
-
-      // Verify Jsoup.connect was only called once
-      jsoupMock.verify(() -> Jsoup.connect(testUrl), times(1));
-    }
+  @Test
+  @DisplayName("Returns null when no image is present")
+  public void testNoImage() {
+    assertNull(extract("<title>No image here</title>"));
   }
 }

@@ -52,46 +52,40 @@ public class GiftVisibilityService {
    * @return true if the gift should be shown to the viewer
    */
   private boolean shouldShowGift(Gift gift, Long viewerId, Long ownerId, boolean isBlindContext, LocalDate today) {
-    List<Claim> claims = claimRepository.findByGiftId(gift.getId());
-
-    // Blind context (owner or admin viewing/editing owner's list): show all gifts, no claim visibility
+    // Blind context (owner viewing their own list, or admin editing it): show all gifts.
+    // Received gifts are only ever visible in this context.
     if (isBlindContext) {
       return true;
     }
 
-    // No claims: always show the gift
-    if (claims.isEmpty()) {
+    List<Claim> claims = claimRepository.findByGiftId(gift.getId());
+
+    // The claimer always sees their own claim (even after it resolves) so they can edit/undo it.
+    boolean viewerHasClaim = claims.stream()
+      .anyMatch(c -> c.getClaimerUser().getId().equals(viewerId));
+    if (viewerHasClaim) {
       return true;
     }
 
-    // Find if viewer has a claim on this gift
-    java.util.Optional<Claim> viewerClaim = claims.stream()
-      .filter(c -> c.getClaimerUser().getId().equals(viewerId))
-      .findFirst();
-
-    // If viewer is the claimer, always show
-    if (viewerClaim.isPresent()) {
-      return true;
+    // Gifts the owner has marked as received are private to the owner — never shown to others.
+    if (gift.getManualReceived()) {
+      return false;
     }
 
-    // If repeatable gift, show to all viewers (claim data for others will be stripped in DTO layer)
+    // Repeatable gifts stay available to everyone regardless of others' claims.
     if (!gift.getOnlyOnce()) {
       return true;
     }
 
-    // Non-repeatable gift claimed by someone else:
-    // Show only if it's considered effectively received
-    for (Claim claim : claims) {
-      if (!claim.getClaimerUser().getId().equals(viewerId)) {
-        boolean isEffectivelyReceived = isEffectiveReceived(gift, claim, today);
-        if (!isEffectivelyReceived) {
-          // Non-repeatable gift claimed by someone else and not yet received: hide it
-          return false;
-        }
-      }
+    // Non-repeatable gift claimed by someone else: hidden from other viewers, both before and
+    // after the gift date resolves it to "received" (received items stay private to the owner).
+    boolean claimedByOther = claims.stream()
+      .anyMatch(c -> !c.getClaimerUser().getId().equals(viewerId));
+    if (claimedByOther) {
+      return false;
     }
 
-    // Non-repeatable gift claimed by someone else, but effectively received: show it
+    // Unclaimed, not received: available to view and claim.
     return true;
   }
 

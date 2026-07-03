@@ -38,11 +38,11 @@ describe('GiftCard', () => {
   })
 
   describe('price chip', () => {
-    it('should render price chip when gift has price', () => {
-      const gift = { ...defaultGift, price: '$29.99' }
+    it('should render price chip with a euro sign when gift has price', () => {
+      const gift = { ...defaultGift, price: '29.99' }
       render(<GiftCard {...defaultProps} gift={gift} />)
 
-      const priceElement = screen.getByText('$29.99')
+      const priceElement = screen.getByText('€29.99')
       expect(priceElement).toBeInTheDocument()
       expect(priceElement).toHaveClass('gift-card__price')
     })
@@ -206,7 +206,7 @@ describe('GiftCard', () => {
       const gift = { ...defaultGift, onlyOnce: false }
       render(<GiftCard {...defaultProps} gift={gift} />)
 
-      const tag = screen.getByText('Repeatable')
+      const tag = screen.getByText('Can give more than once')
       expect(tag).toBeInTheDocument()
       expect(tag).toHaveClass('gift-card__tag--teal')
     })
@@ -215,7 +215,7 @@ describe('GiftCard', () => {
       const gift = { ...defaultGift, onlyOnce: true }
       render(<GiftCard {...defaultProps} gift={gift} />)
 
-      expect(screen.queryByText('Repeatable')).not.toBeInTheDocument()
+      expect(screen.queryByText('Can give more than once')).not.toBeInTheDocument()
     })
 
     it('should render all three tags when all flags are set', () => {
@@ -229,7 +229,7 @@ describe('GiftCard', () => {
 
       expect(screen.getByText('Exact color')).toBeInTheDocument()
       expect(screen.getByText('Exact product')).toBeInTheDocument()
-      expect(screen.getByText('Repeatable')).toBeInTheDocument()
+      expect(screen.getByText('Can give more than once')).toBeInTheDocument()
     })
 
     it('should render violet tags for exactColor and exactProduct', () => {
@@ -251,7 +251,7 @@ describe('GiftCard', () => {
       const gift = { ...defaultGift, onlyOnce: false }
       render(<GiftCard {...defaultProps} gift={gift} />)
 
-      const repeatableTag = screen.getByText('Repeatable')
+      const repeatableTag = screen.getByText('Can give more than once')
       expect(repeatableTag).toHaveClass('gift-card__tag--teal')
     })
 

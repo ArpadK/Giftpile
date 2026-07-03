@@ -125,12 +125,12 @@ public class GiftVisibilityServiceTest {
     List<Gift> filtered = giftVisibilityService.filterForViewer(
         gifts, viewerUser.getId(), ownerUser.getId(), false);
 
-    // Gift should be shown (effectively received)
-    assertEquals(1, filtered.size());
+    // Received gifts are private to the owner: hidden from other viewers.
+    assertEquals(0, filtered.size());
   }
 
   @Test
-  public void nonRepeatableClaimedByOtherShownWhenManuallyReceived() {
+  public void nonRepeatableClaimedByOtherHiddenWhenManuallyReceived() {
     // Test: Non-repeatable gift claimed by someone else is shown when manually marked received
     Gift gift = createGift(1L, ownerUser, "Non-Repeatable Gift", true);
     gift.setId(1L);
@@ -147,8 +147,8 @@ public class GiftVisibilityServiceTest {
     List<Gift> filtered = giftVisibilityService.filterForViewer(
         gifts, viewerUser.getId(), ownerUser.getId(), false);
 
-    // Gift should be shown (manually received)
-    assertEquals(1, filtered.size());
+    // Received gifts are private to the owner: hidden from other viewers.
+    assertEquals(0, filtered.size());
   }
 
   // ==================== Repeatable Gift Tests ====================
@@ -359,8 +359,8 @@ public class GiftVisibilityServiceTest {
   // ==================== Auto-Received (effectiveReceived) in Filtered Results Tests ====================
 
   @Test
-  public void autoReceivedAppearsInReceivedWhenTodayAfterDate() {
-    // Test: Auto-received gift appears in results when today > giftDate
+  public void autoReceivedHiddenFromOthersWhenTodayAfterDate() {
+    // Test: Auto-received gift (claimed by another) is hidden from other viewers
     Gift gift = createGift(1L, ownerUser, "Auto-Received Gift", true);
     gift.setId(1L);
     gift.setOnlyOnce(true);
@@ -377,8 +377,8 @@ public class GiftVisibilityServiceTest {
     List<Gift> filtered = giftVisibilityService.filterForViewer(
         gifts, viewerUser.getId(), ownerUser.getId(), false);
 
-    // Gift should be visible because it's effectively received (auto-received)
-    assertEquals(1, filtered.size());
+    // Received gifts are private to the owner: hidden from other viewers.
+    assertEquals(0, filtered.size());
   }
 
   @Test

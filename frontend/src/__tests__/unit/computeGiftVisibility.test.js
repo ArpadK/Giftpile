@@ -184,7 +184,7 @@ describe('shouldShowGift', () => {
     expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(false)
   })
 
-  it('should show non-repeatable gift when claimed by others but effectively received', () => {
+  it('should hide non-repeatable gift claimed by others once received (private to owner)', () => {
     const gift = {
       id: 1,
       onlyOnce: true,
@@ -195,10 +195,10 @@ describe('shouldShowGift', () => {
     const ownerId = 1
     const today = new Date('2024-01-15')
 
-    expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(true)
+    expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(false)
   })
 
-  it('should show non-repeatable gift when manually marked received (claimed by others)', () => {
+  it('should hide non-repeatable gift manually marked received (private to owner)', () => {
     const gift = {
       id: 1,
       onlyOnce: true,
@@ -209,7 +209,7 @@ describe('shouldShowGift', () => {
     const ownerId = 1
     const today = new Date('2024-01-15')
 
-    expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(true)
+    expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(false)
   })
 
   it('should hide non-repeatable gift with multiple claims if any claim not received', () => {
@@ -229,7 +229,7 @@ describe('shouldShowGift', () => {
     expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(false)
   })
 
-  it('should show non-repeatable gift with multiple claims all received', () => {
+  it('should hide non-repeatable gift claimed by others even when all claims received', () => {
     const gift = {
       id: 1,
       onlyOnce: true,
@@ -243,7 +243,7 @@ describe('shouldShowGift', () => {
     const ownerId = 1
     const today = new Date('2024-01-15')
 
-    expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(true)
+    expect(shouldShowGift(gift, viewerId, ownerId, false, today)).toBe(false)
   })
 })
 
@@ -266,7 +266,7 @@ describe('computeGiftVisibility', () => {
         id: 3,
         onlyOnce: true,
         manualReceived: false,
-        claims: [{ claimerUserId: 2, giftDate: '2024-01-10' }], // Visible (received)
+        claims: [{ claimerUserId: 2, giftDate: '2024-01-10' }], // Hidden (claimed by other, received → private to owner)
       },
     ]
     const viewerId = 3
@@ -275,8 +275,9 @@ describe('computeGiftVisibility', () => {
 
     const visible = computeGiftVisibility(gifts, viewerId, ownerId, false, today)
 
-    expect(visible).toHaveLength(2)
-    expect(visible.map(g => g.id)).toEqual([2, 3])
+    // Only the repeatable, unclaimed gift (id 2) is visible to a non-owner viewer.
+    expect(visible).toHaveLength(1)
+    expect(visible.map(g => g.id)).toEqual([2])
   })
 
   it('should return all gifts in blind context', () => {

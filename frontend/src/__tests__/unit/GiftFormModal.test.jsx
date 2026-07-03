@@ -3,6 +3,19 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { GiftFormModal } from '../../components/GiftFormModal'
 
+// Helper: find the clickable check-row that contains the given label text,
+// and return the row plus its visual check-box element.
+function getCheckRow(labelText) {
+  const label = screen.getByText(labelText)
+  const row = label.closest('.sheet__check-row')
+  const box = row.querySelector('.sheet__check-box')
+  return { row, box }
+}
+
+function isChecked(box) {
+  return box.classList.contains('sheet__check-box--checked')
+}
+
 describe('GiftFormModal', () => {
   it('should render with empty fields for new gift', () => {
     const onSave = vi.fn()
@@ -17,13 +30,13 @@ describe('GiftFormModal', () => {
     )
 
     // Check that modal is visible with correct title
-    expect(screen.getByRole('heading')).toHaveTextContent('Add a gift idea')
+    expect(screen.getByText('Add a gift idea')).toBeInTheDocument()
 
     // Check all input fields are empty
-    expect(screen.getByPlaceholderText('What do you want?')).toHaveValue('')
-    expect(screen.getByPlaceholderText('https://example.com')).toHaveValue('')
-    expect(screen.getByPlaceholderText('$50')).toHaveValue('')
-    expect(screen.getByPlaceholderText('Any special details?')).toHaveValue('')
+    expect(screen.getByPlaceholderText('e.g. Wool socks')).toHaveValue('')
+    expect(screen.getByPlaceholderText('https://...')).toHaveValue('')
+    expect(screen.getByPlaceholderText('e.g. 25')).toHaveValue(null)
+    expect(screen.getByPlaceholderText('Any extra detail...')).toHaveValue('')
 
     // Check button text
     expect(screen.getByRole('button', { name: /Add gift/ })).toBeInTheDocument()
@@ -41,21 +54,15 @@ describe('GiftFormModal', () => {
       />
     )
 
-    // Find the "Only give this once" checkbox and verify it's checked
-    const onlyOnceCheckbox = screen.getByRole('checkbox', {
-      name: /Only give this once/,
-    })
-    expect(onlyOnceCheckbox).toBeChecked()
+    // "Only give this once" is checked by default
+    const { box: onlyOnceBox } = getCheckRow('Only give this once')
+    expect(isChecked(onlyOnceBox)).toBe(true)
 
     // Other checkboxes should not be checked by default
-    const exactColorCheckbox = screen.getByRole('checkbox', {
-      name: /Must be this exact color/,
-    })
-    const exactProductCheckbox = screen.getByRole('checkbox', {
-      name: /Must be this exact product/,
-    })
-    expect(exactColorCheckbox).not.toBeChecked()
-    expect(exactProductCheckbox).not.toBeChecked()
+    const { box: exactColorBox } = getCheckRow('Must be this exact color')
+    const { box: exactProductBox } = getCheckRow('Must be this exact product / brand')
+    expect(isChecked(exactColorBox)).toBe(false)
+    expect(isChecked(exactProductBox)).toBe(false)
   })
 
   it('should show validation error when title is empty', async () => {
@@ -96,24 +103,21 @@ describe('GiftFormModal', () => {
     )
 
     // Fill in the required title field
-    const titleInput = screen.getByPlaceholderText('What do you want?')
+    const titleInput = screen.getByPlaceholderText('e.g. Wool socks')
     await user.type(titleInput, 'PlayStation 5')
 
     // Fill in some optional fields
-    const linkInput = screen.getByPlaceholderText('https://example.com')
+    const linkInput = screen.getByPlaceholderText('https://...')
     await user.type(linkInput, 'https://amazon.com/ps5')
 
-    const priceInput = screen.getByPlaceholderText('$50')
-    await user.type(priceInput, '$499')
+    const priceInput = screen.getByPlaceholderText('e.g. 25')
+    await user.type(priceInput, '499')
 
-    const descriptionInput = screen.getByPlaceholderText('Any special details?')
+    const descriptionInput = screen.getByPlaceholderText('Any extra detail...')
     await user.type(descriptionInput, 'The newer model')
 
-    // Check one of the optional checkboxes
-    const exactProductCheckbox = screen.getByRole('checkbox', {
-      name: /Must be this exact product/,
-    })
-    await user.click(exactProductCheckbox)
+    // Toggle one of the optional checkboxes by clicking its row (via the label)
+    await user.click(screen.getByText('Must be this exact product / brand'))
 
     // Submit the form
     const submitButton = screen.getByRole('button', { name: /Add gift/ })
@@ -123,7 +127,7 @@ describe('GiftFormModal', () => {
     expect(onSave).toHaveBeenCalledWith({
       title: 'PlayStation 5',
       link: 'https://amazon.com/ps5',
-      price: '$499',
+      price: '499',
       description: 'The newer model',
       exactColor: false,
       exactProduct: true,
@@ -138,7 +142,7 @@ describe('GiftFormModal', () => {
     const existingGift = {
       title: 'iPhone 15',
       link: 'https://apple.com/iphone',
-      price: '$999',
+      price: '999',
       description: 'Pro Max variant',
       exactColor: true,
       exactProduct: true,
@@ -154,28 +158,22 @@ describe('GiftFormModal', () => {
     )
 
     // Check that modal title reflects edit mode
-    expect(screen.getByRole('heading')).toHaveTextContent('Edit gift idea')
+    expect(screen.getByText('Edit gift idea')).toBeInTheDocument()
 
     // Check that all fields are pre-filled
-    expect(screen.getByPlaceholderText('What do you want?')).toHaveValue(
-      'iPhone 15'
-    )
-    expect(screen.getByPlaceholderText('https://example.com')).toHaveValue(
+    expect(screen.getByPlaceholderText('e.g. Wool socks')).toHaveValue('iPhone 15')
+    expect(screen.getByPlaceholderText('https://...')).toHaveValue(
       'https://apple.com/iphone'
     )
-    expect(screen.getByPlaceholderText('$50')).toHaveValue('$999')
-    expect(screen.getByPlaceholderText('Any special details?')).toHaveValue(
+    expect(screen.getByPlaceholderText('e.g. 25')).toHaveValue(999)
+    expect(screen.getByPlaceholderText('Any extra detail...')).toHaveValue(
       'Pro Max variant'
     )
 
     // Check that checkboxes are in correct state
-    expect(
-      screen.getByRole('checkbox', { name: /Must be this exact color/ })
-    ).toBeChecked()
-    expect(
-      screen.getByRole('checkbox', { name: /Must be this exact product/ })
-    ).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: /Only give this once/ })).not.toBeChecked()
+    expect(isChecked(getCheckRow('Must be this exact color').box)).toBe(true)
+    expect(isChecked(getCheckRow('Must be this exact product / brand').box)).toBe(true)
+    expect(isChecked(getCheckRow('Only give this once').box)).toBe(false)
 
     // Check button text
     expect(
@@ -183,7 +181,7 @@ describe('GiftFormModal', () => {
     ).toBeInTheDocument()
   })
 
-  it('should clear validation error when user starts editing the field', async () => {
+  it('should show the validation error only on empty submit and not clear on keystroke', async () => {
     const user = userEvent.setup()
     const onSave = vi.fn()
     const onClose = vi.fn()
@@ -200,15 +198,25 @@ describe('GiftFormModal', () => {
     const submitButton = screen.getByRole('button', { name: /Add gift/ })
     await user.click(submitButton)
 
-    // Error should be visible
+    // Error should be visible and onSave not called
+    expect(screen.getByText('Title is required')).toBeInTheDocument()
+    expect(onSave).not.toHaveBeenCalled()
+
+    // Typing does NOT clear the error (no per-keystroke clearing anymore)
+    const titleInput = screen.getByPlaceholderText('e.g. Wool socks')
+    await user.type(titleInput, 'A valid title')
     expect(screen.getByText('Title is required')).toBeInTheDocument()
 
-    // Type in the title field
-    const titleInput = screen.getByPlaceholderText('What do you want?')
-    await user.type(titleInput, 'A')
+    // Price is also required, so fill it before a valid submit.
+    await user.type(screen.getByPlaceholderText('e.g. 25'), '25')
 
-    // Error should be cleared
-    expect(screen.queryByText('Title is required')).not.toBeInTheDocument()
+    // A valid submit still calls onSave (the component does not re-render the
+    // error away, but the save goes through with the entered data)
+    await user.click(submitButton)
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'A valid title' })
+    )
   })
 
   it('should close modal when cancel button is clicked', async () => {
@@ -244,13 +252,13 @@ describe('GiftFormModal', () => {
       />
     )
 
-    const backdrop = container.querySelector('.modal-backdrop')
+    const backdrop = container.querySelector('.sheet-backdrop')
     await user.click(backdrop)
 
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('should not close modal when modal-sheet is clicked', async () => {
+  it('should not close modal when sheet is clicked', async () => {
     const user = userEvent.setup()
     const onSave = vi.fn()
     const onClose = vi.fn()
@@ -263,8 +271,8 @@ describe('GiftFormModal', () => {
       />
     )
 
-    const modalSheet = container.querySelector('.modal-sheet')
-    await user.click(modalSheet)
+    const sheet = container.querySelector('.sheet')
+    await user.click(sheet)
 
     expect(onClose).not.toHaveBeenCalled()
   })

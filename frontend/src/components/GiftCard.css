@@ -8,8 +8,8 @@
   flex-direction: column;
 }
 
-.gift-card--received {
-  opacity: 0.6;
+.gift-card--claimed-by-me {
+  opacity: 0.85;
 }
 
 .gift-card__image-container {
@@ -31,28 +31,21 @@
   padding: var(--spacing-lg) var(--spacing-xl);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  flex: 1;
 }
 
 .gift-card__header {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-md);
   justify-content: space-between;
-}
-
-.gift-card__title-section {
-  flex: 1;
-  min-width: 0;
+  gap: var(--spacing-sm);
 }
 
 .gift-card__title {
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-heading); /* 16px */
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  line-height: 1.3;
   word-break: break-word;
-  margin-bottom: var(--spacing-xs);
 }
 
 .gift-card__title--claimed {
@@ -61,29 +54,32 @@
 }
 
 .gift-card__price {
-  display: inline-block;
-  background-color: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
-  margin-top: var(--spacing-xs);
+  flex-shrink: 0;
+  height: fit-content;
+  background-color: var(--color-amber-soft);
+  color: var(--color-amber-text);
+  font-size: var(--font-size-label); /* 13px */
+  font-weight: var(--font-weight-bold);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
 }
 
 .gift-card__description {
   font-size: var(--font-size-body-sm);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.5;
+  margin-top: 6px;
 }
 
 .gift-card__link {
   color: var(--color-primary);
-  font-size: var(--font-size-body-sm);
-  text-decoration: none;
+  font-size: var(--font-size-label); /* 13px */
+  text-decoration: underline;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  margin-top: 8px;
+  align-self: flex-start;
 }
 
 .gift-card__link:hover {
@@ -93,17 +89,15 @@
 .gift-card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .gift-card__tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-medium);
-  padding: 4px 10px;
-  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  padding: 4px 9px;
+  border-radius: var(--radius-full);
 }
 
 .gift-card__tag--violet {
@@ -116,124 +110,185 @@
   color: var(--color-teal-text);
 }
 
+/* Action row (owner / admin-edit) */
 .gift-card__actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--color-border);
-}
-
-.gift-card__action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-full);
-  background-color: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--easing-standard);
-  flex-shrink: 0;
-}
-
-.gift-card__action-btn:hover:not(:disabled) {
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-}
-
-.gift-card__action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.gift-card__action-btn--mark-received {
-  color: var(--color-green);
-}
-
-.gift-card__action-btn--delete {
-  color: var(--color-danger);
-}
-
-.gift-card__action-btn--delete:hover:not(:disabled) {
-  background-color: var(--color-danger-soft);
+  gap: var(--spacing-xs); /* 8px */
+  margin-top: var(--spacing-lg); /* 14px */
 }
 
 .gift-card__spacer {
   flex: 1;
 }
 
-.gift-card__claim-bar {
-  background-color: var(--color-green-soft);
-  color: var(--color-green-text);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-medium);
-  padding: var(--spacing-sm) var(--spacing-xl);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.gift-card__claim-bar-icon {
-  width: 16px;
-  height: 16px;
+/* Move up/down: bordered circles */
+.gift-card__move-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
   flex-shrink: 0;
+  transition: opacity var(--duration-fast) var(--easing-standard);
 }
 
+.gift-card__move-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Edit / received / delete: tinted-fill circles */
+.gift-card__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+}
+
+.gift-card__icon-btn:hover {
+  opacity: 0.85;
+}
+
+.gift-card__icon-btn--edit {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.gift-card__icon-btn--received {
+  background-color: var(--color-green-soft);
+  color: var(--color-green-text);
+}
+
+.gift-card__icon-btn--delete {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+/* Viewer: own claim bar */
+.gift-card__claim-bar {
+  margin-top: var(--spacing-md);
+  background-color: var(--color-green-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.gift-card__claim-bar-text {
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-green-text);
+}
+
+/* Viewer: claim button */
 .gift-card__claim-btn {
+  margin-top: var(--spacing-md);
   background-color: var(--color-primary);
   color: white;
-  font-size: var(--font-size-body-sm);
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
-  padding: 10px 16px;
+  padding: 11px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--easing-standard);
   width: 100%;
   border: none;
-  font-family: inherit;
+  transition: opacity var(--duration-fast) var(--easing-standard);
 }
 
 .gift-card__claim-btn:hover {
   opacity: 0.9;
 }
 
-.gift-card__undo-btn {
-  background-color: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: var(--font-size-label);
+/* Small pills */
+.gift-card__edit-pill {
+  font-size: 12px;
   font-weight: var(--font-weight-semibold);
-  padding: 8px 12px;
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  border: none;
+  padding: 6px 10px;
   border-radius: var(--radius-full);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--easing-standard);
-  border: none;
-  font-family: inherit;
+  white-space: nowrap;
 }
 
-.gift-card__undo-btn:hover {
-  opacity: 0.8;
+.gift-card__edit-pill--on-green {
+  color: var(--color-green-text);
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.gift-card__undo-btn {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  border: none;
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Compact received row */
+.gift-card--received {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  opacity: 0.6;
+}
+
+.gift-card__received-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.gift-card__received-title {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-body);
+  text-decoration: line-through;
+}
+
+.gift-card__received-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.gift-card__received-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
 }
 
 .gift-card__delete-btn {
-  background-color: transparent;
+  background-color: var(--color-danger-soft);
   color: var(--color-danger);
   cursor: pointer;
-  padding: 8px;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--duration-fast) var(--easing-standard);
+  border-radius: var(--radius-full);
   flex-shrink: 0;
 }
 
-.gift-card__delete-btn:hover {
-  background-color: var(--color-danger-soft);
-  border-radius: var(--radius-full);
+.gift-card__delete-btn--sm {
+  width: 32px;
+  height: 32px;
 }
