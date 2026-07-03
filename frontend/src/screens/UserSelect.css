@@ -1,0 +1,116 @@
+.user-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-xl);
+  background-color: var(--color-background);
+}
+
+.user-select__container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3xl);
+  animation: slideUp var(--duration-slow) var(--easing-standard);
+}
+
+.logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-direction: column;
+  text-align: center;
+}
+
+.logo-icon {
+  border-radius: var(--radius-md);
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.subheading {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  margin-top: -var(--spacing-xl);
+}
+
+.user-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--spacing-2xl);
+}
+
+.setup-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.setup-form__input {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-family: inherit;
+  outline: none;
+}
+
+.setup-form__input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.setup-form__error {
+  color: var(--color-danger);
+  font-size: var(--font-size-caption);
+  margin-top: calc(-1 * var(--spacing-xs));
+}
+
+.setup-form__button {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+  box-shadow: var(--shadow-cta);
+}
+
+.setup-form__button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.setup-form__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

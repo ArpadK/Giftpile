@@ -4,13 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Giftpile is a self-hostable ("localhostable") wishlist application. This is an early-stage
-greenfield project: as of now the repository contains only project scaffolding — there is no
-application code, and no build system (Maven/Gradle) has been committed yet.
+Giftpile is a self-hostable family wishlist application. Tech stack (all to be implemented — no code exists yet):
 
-Intended platform: Java on JDK 25 (Temurin 25), configured as a plain IntelliJ Java module.
-The `.gitignore` is Java-oriented (`.class`, `.jar`/`.war`, etc.). When adding a build system,
-pick one deliberately (Maven `pom.xml` or Gradle) and update this file with build/test/run commands.
+- **Backend**: Java 25, Spring Boot 4.1.0, Maven 3.9+, Spring Data JPA + Hibernate 7.x, Flyway 11, Spring Security 7.x (session auth, BCrypt), Jsoup 1.20.1 (OG parsing)
+- **Frontend**: React 19, Vite 6, React Router 7, Node 22 LTS — plain CSS with design tokens, no component library
+- **Database**: SQLite (default, via xerial sqlite-jdbc 3.49.1.0) or Postgres (opt-in via `DATABASE_URL` env var)
+- **Testing**: JUnit 5 + Testcontainers 1.21.0 (backend); Vitest 3 + React Testing Library 16 + Playwright 1.52 (frontend)
+- **Deploy**: Docker Compose (`backend/` + `frontend/` each with a multi-stage Dockerfile)
+
+Project layout: `backend/` (Maven) and `frontend/` (npm/Vite) are independent build roots.
+
+Once code exists, update this file with the actual build/test/run commands.
 
 ## Spec-driven workflow (OpenSpec)
 
@@ -25,8 +29,7 @@ Use the OpenSpec skills / `/opsx` commands to drive this:
 - `openspec-sync-specs` (`/opsx:sync`) — sync delta specs into the main specs.
 - `openspec-archive-change` (`/opsx:archive`) — finalize and archive a completed change.
 
-Project-wide context and per-artifact rules for OpenSpec live in `openspec/config.yaml`
-(currently empty templates — fill in the `context:` and `rules:` sections as conventions solidify).
+Project-wide context and per-artifact rules for OpenSpec live in `openspec/config.yaml`.
 
 ## Git
 

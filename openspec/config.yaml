@@ -1,20 +1,60 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: Giftpile — a self-hostable, mobile-first family wishlist application.
+  Name changed from "Giftly" in the design handoff to "Giftpile" in the codebase.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Tech stack:
+  - Frontend: React 19, Vite 6, React Router 7, Node 22 LTS — mobile-first, no component library, custom CSS via design tokens.
+  - Backend: Java 25, Spring Boot 4.1.0 (spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-security).
+  - Database: SQLite default via xerial sqlite-jdbc 3.49.1.0; Postgres opt-in via DATABASE_URL env var.
+    Spring Data JPA + Hibernate 7.x, Flyway 11 (flyway-core + flyway-database-sqlite) for migrations.
+  - Auth: session-based (Spring Security 7.x), BCryptPasswordEncoder. No JWT.
+  - Build: Maven 3.9+ (backend), npm (frontend).
+  - Testing: JUnit 5, Mockito 5, Testcontainers 1.21.0 (backend); Vitest 3, React Testing Library 16, Playwright 1.52 (frontend).
+  - Jsoup 1.20.1 for OG link-preview parsing.
+
+  Design tokens (from design handoff — treat as final):
+  - Primary: #4C5FE8, primary-soft: #E9EBFC
+  - Background: #F4F5FA, Surface: #FFFFFF
+  - Text-primary: #1A1B25, text-muted: #6B7080, border: #E4E6EF
+  - Danger: #E5484D / soft #FDE7E8
+  - Amber: #F2A93B / soft #FDF0DD / text #B5720F
+  - Violet: #8B5CF6 / soft #EFE7FE / text #6D3FCB
+  - Teal: #2EC4B6 / soft #DFF8F5 / text #12897D
+  - Green: #22C55E / soft #E4F8EA / text #178A45
+  - Avatar accent rotation: #4C5FE8, #FF6B6B, #F2A93B, #2EC4B6, #8B5CF6, #FF8FB1
+  - Font: Manrope 800 for headings; system stack for body
+  - Card radius: 20px, button/pill: 14px, input: 12px, avatar/icon-btn: 999px
+  - Card shadow: 0 1px 3px rgba(20,20,43,0.07), 0 1px 2px rgba(20,20,43,0.05)
+  - CTA shadow: 0 6px 18px rgba(76,95,232,0.28)
+  - Top-bar shadow: 0 2px 8px rgba(20,20,43,0.12)
+  - Screen padding: 16-20px; card internal: 14×16px; card gap: 10-12px
+
+  Core data model:
+    User { id, name, passwordHash, isAdmin, color }
+    Gift { id, ownerId, title (required), link?, price?, description?,
+           exactColor (false), exactProduct (false), onlyOnce (true),
+           manualReceived (false), claim { by, date }?, priority }
+    Derived: effectiveReceived = manualReceived || (claim && onlyOnce && today > claim.date)
+
+  Key business rules:
+  - Non-repeatable gifts (onlyOnce=true): only one claim at a time; claimed gifts are hidden from
+    all other viewers (not just dimmed — entirely absent); auto-flip to received the day after gift date.
+  - Repeatable gifts (onlyOnce=false): multiple independent claims allowed simultaneously; never auto-receive.
+  - The gift owner (and admin editing that list) never sees claim data — "blind context."
+  - List visibility is a pure function: implement once, share across My List / Admin-edit / Other-member views.
+  - Admin delete: cascades to user's gifts + clears their claims on others; cannot self-delete; cannot delete last admin.
+  - Reveal timing: effectiveReceived flips when today > claim.date (strictly after, not on the day).
+
+  Icons: Lucide-style inline SVG (24×24, 2px stroke, rounded caps, currentColor). No icon font.
+  Animations: fade/slide-up on screen entry (~300-400ms); modal backdrop fade ~200ms; sheet scale+translate ~250ms.
+    Easing: cubic-bezier(0.2, 0, 0, 1).
+
+  Screens: user-select, password, home, my-list/admin-edit-list, other-member-list, admin-panel.
+  Modals: claim/give bottom-sheet, gift add/edit form bottom-sheet, delete-user confirm, admin-edit confirm, gift delete confirm.
+
+rules:
+  tasks:
+    - Each task should be independently implementable (front-end tasks should not block back-end tasks where possible).
+    - Prefer vertical slices (one screen or feature end-to-end) over horizontal layers.

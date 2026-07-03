@@ -1,0 +1,55 @@
+# Giftpile — run the whole app with:  docker compose up --build
+# Then open http://localhost:8080  (the backend serves both the API and the built SPA).
+#
+# Data is stored in a SQLite file on a named volume, so it survives restarts.
+# To use Postgres instead of SQLite:  docker compose --profile postgres up --build
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: jdbc:sqlite:/app/data/giftpile.db
+    volumes:
+      - giftpile-data:/app/data
+    restart: unless-stopped
+
+  # --- Optional Postgres setup (opt in with `--profile postgres`) ---
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: giftpile
+      POSTGRES_USER: giftpile
+      POSTGRES_PASSWORD: giftpile
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U giftpile"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - postgres
+
+  backend-postgres:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/giftpile?user=giftpile&password=giftpile
+      DB_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    restart: unless-stopped
+    profiles:
+      - postgres
+
+volumes:
+  giftpile-data:
+  postgres-data:

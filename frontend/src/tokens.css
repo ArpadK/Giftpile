@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap');
+
+:root {
+  /* Colors - Primary */
+  --color-primary: #4C5FE8;
+  --color-primary-soft: #E9EBFC;
+
+  /* Colors - Neutral */
+  --color-background: #F4F5FA;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #1A1B25;
+  --color-text-muted: #6B7080;
+  --color-border: #E4E6EF;
+
+  /* Colors - Semantic */
+  --color-danger: #E5484D;
+  --color-danger-soft: #FDE7E8;
+  --color-danger-text: #C91F26;
+
+  --color-amber: #F2A93B;
+  --color-amber-soft: #FDF0DD;
+  --color-amber-text: #B5720F;
+
+  --color-violet: #8B5CF6;
+  --color-violet-soft: #EFE7FE;
+  --color-violet-text: #6D3FCB;
+
+  --color-teal: #2EC4B6;
+  --color-teal-soft: #DFF8F5;
+  --color-teal-text: #12897D;
+
+  --color-green: #22C55E;
+  --color-green-soft: #E4F8EA;
+  --color-green-text: #178A45;
+
+  /* Avatar colors (rotation) */
+  --color-avatar-1: #4C5FE8;
+  --color-avatar-2: #FF6B6B;
+  --color-avatar-3: #F2A93B;
+  --color-avatar-4: #2EC4B6;
+  --color-avatar-5: #8B5CF6;
+  --color-avatar-6: #FF8FB1;
+
+  /* Typography */
+  --font-display: 'Manrope', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-body: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --font-size-display: 22px;
+  --font-size-heading-lg: 19px;
+  --font-size-heading: 16px;
+  --font-size-body: 15px;
+  --font-size-body-sm: 13.5px;
+  --font-size-label: 13px;
+  --font-size-caption: 11.5px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 700;
+  --font-weight-bold: 800;
+
+  /* Spacing */
+  --spacing-xs: 8px;
+  --spacing-sm: 10px;
+  --spacing-md: 12px;
+  --spacing-lg: 14px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 20px;
+  --spacing-3xl: 24px;
+
+  /* Border Radius */
+  --radius-sm: 12px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(20, 20, 43, 0.07), 0 1px 2px rgba(20, 20, 43, 0.05);
+  --shadow-cta: 0 6px 18px rgba(76, 95, 232, 0.28);
+  --shadow-topbar: 0 2px 8px rgba(20, 20, 43, 0.12);
+
+  /* Transitions */
+  --duration-fast: 200ms;
+  --duration-standard: 250ms;
+  --duration-slow: 350ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: var(--font-size-display);
+}
+
+h2 {
+  font-size: var(--font-size-heading-lg);
+}
+
+h3, h4, h5, h6 {
+  font-size: var(--font-size-heading);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Utility classes */
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-danger {
+  color: var(--color-danger);
+}
+
+.card-shadow {
+  box-shadow: var(--shadow-card);
+}
+
+.cta-shadow {
+  box-shadow: var(--shadow-cta);
+}
+
+.topbar-shadow {
+  box-shadow: var(--shadow-topbar);
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+}

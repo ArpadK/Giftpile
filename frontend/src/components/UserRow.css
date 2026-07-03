@@ -1,0 +1,50 @@
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: opacity var(--duration-fast) var(--easing-standard);
+}
+
+.user-row:hover {
+  opacity: 0.9;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-label);
+  flex-shrink: 0;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+}
+
+.user-meta {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}

@@ -1,0 +1,96 @@
+/* Reuse shared modal styles from GiftFormModal */
+@import './GiftFormModal.css';
+
+.claim-modal__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.claim-modal__helper {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.claim-modal__date-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.claim-modal__label {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.claim-modal__date-input {
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  transition: border-color var(--duration-fast) var(--easing-standard);
+}
+
+.claim-modal__date-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.claim-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}
+
+.claim-modal__btn {
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing-standard);
+  font-family: inherit;
+}
+
+.claim-modal__btn--primary {
+  background-color: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-cta);
+}
+
+.claim-modal__btn--primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.claim-modal__btn--secondary {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.claim-modal__btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+.claim-modal__btn--danger {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+.claim-modal__btn--danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.claim-modal__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
