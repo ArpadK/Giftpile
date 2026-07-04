@@ -93,7 +93,7 @@ read-packages PAT.
 ## Database
 
 - **SQLite (default)**: no configuration; the database is a `giftpile.db` file in the working
-  directory (or `/app/data` on the Docker volume). The schema is created automatically.
+  directory (or `/app/data` on the Docker volume). The schema is created automatically on first boot by Flyway (`V1__init.sql`).
 - **PostgreSQL**: set both environment variables and start normally:
 
   ```bash
