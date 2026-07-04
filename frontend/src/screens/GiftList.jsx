@@ -29,6 +29,7 @@ export function GiftList() {
   const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingGift, setEditingGift] = useState(null)
@@ -70,7 +71,7 @@ export function GiftList() {
   const activeGifts = gifts.filter(g => !g.manualReceived && !g.effectiveReceived)
   const receivedGifts = gifts.filter(g => g.manualReceived || g.effectiveReceived)
 
-  const hasActiveFilter = priceMin !== '' || priceMax !== ''
+  const hasActiveFilter = priceMin !== '' || priceMax !== '' || typeFilter !== ''
 
   function parsePrice(price) {
     if (price == null) return null
@@ -79,6 +80,7 @@ export function GiftList() {
   }
 
   const filteredActiveGifts = hasActiveFilter ? activeGifts.filter(g => {
+    if (typeFilter && g.type !== typeFilter) return false
     const p = parsePrice(g.price)
     if (p === null) return true
     if (priceMin !== '' && p < parseFloat(priceMin)) return false
@@ -86,9 +88,10 @@ export function GiftList() {
     return true
   }) : activeGifts
 
-  function handleFilterApply({ priceMin: min, priceMax: max }) {
+  function handleFilterApply({ priceMin: min, priceMax: max, typeFilter: type }) {
     setPriceMin(min)
     setPriceMax(max)
+    setTypeFilter(type)
   }
 
   async function handleSaveGift(formData) {
@@ -330,6 +333,7 @@ export function GiftList() {
         <FilterSheet
           priceMin={priceMin}
           priceMax={priceMax}
+          typeFilter={typeFilter}
           onApply={handleFilterApply}
           onClose={() => setShowFilterSheet(false)}
         />

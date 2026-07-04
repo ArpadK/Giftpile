@@ -96,6 +96,32 @@
   margin-bottom: 0;
 }
 
+/* Type toggle (e.g. Gift / Experience) */
+.sheet__type-toggle {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: 14px;
+}
+
+.sheet__type-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing-standard);
+}
+
+.sheet__type-btn--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
 /* Custom checkbox rows */
 .sheet__check-row {
   display: flex;

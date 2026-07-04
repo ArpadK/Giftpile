@@ -131,7 +131,8 @@ describe('GiftFormModal', () => {
       description: 'The newer model',
       exactColor: false,
       exactProduct: true,
-      onlyOnce: true, // Should still be checked by default
+      onlyOnce: true,
+      type: 'GIFT', // default
     })
   })
 

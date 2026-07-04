@@ -100,6 +100,16 @@
   border-radius: var(--radius-full);
 }
 
+.gift-card__tag--blue {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.gift-card__tag--amber {
+  background-color: var(--color-amber-soft);
+  color: var(--color-amber-text);
+}
+
 .gift-card__tag--violet {
   background-color: var(--color-violet-soft);
   color: var(--color-violet-text);

@@ -21,6 +21,7 @@ export function GiftFormModal({ gift, onSave, onClose }) {
     exactColor: false,
     exactProduct: false,
     onlyOnce: true,
+    type: 'GIFT',
   })
   const [error, setError] = useState('')
 
@@ -34,6 +35,7 @@ export function GiftFormModal({ gift, onSave, onClose }) {
         exactColor: gift.exactColor || false,
         exactProduct: gift.exactProduct || false,
         onlyOnce: gift.onlyOnce !== false,
+        type: gift.type || 'GIFT',
       })
     }
   }, [gift])
@@ -83,6 +85,20 @@ export function GiftFormModal({ gift, onSave, onClose }) {
           placeholder="e.g. Wool socks"
           autoFocus
         />
+
+        <label className="sheet__label">Type</label>
+        <div className="sheet__type-toggle">
+          {['GIFT', 'EXPERIENCE'].map(t => (
+            <button
+              key={t}
+              type="button"
+              className={`sheet__type-btn${formData.type === t ? ' sheet__type-btn--active' : ''}`}
+              onClick={() => setField('type', t)}
+            >
+              {t === 'GIFT' ? '🎁 Gift' : '✨ Experience'}
+            </button>
+          ))}
+        </div>
 
         <label className="sheet__label">Link (optional)</label>
         <input

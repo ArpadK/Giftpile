@@ -2,6 +2,7 @@ package com.giftpile.dto;
 
 import com.giftpile.entity.Claim;
 import com.giftpile.entity.Gift;
+import com.giftpile.entity.GiftType;
 
 import java.time.LocalDate;
 
@@ -21,6 +22,7 @@ public record GiftDTO(
   Boolean manualReceived,
   Boolean effectiveReceived,
   Integer priority,
+  GiftType type,
   ClaimDTO claim
 ) {
   public static GiftDTO of(Gift gift, Claim viewerClaim, boolean effectiveReceived) {
@@ -36,6 +38,7 @@ public record GiftDTO(
       gift.getManualReceived(),
       effectiveReceived,
       gift.getPriority(),
+      gift.getType(),
       viewerClaim == null ? null : ClaimDTO.from(viewerClaim)
     );
   }

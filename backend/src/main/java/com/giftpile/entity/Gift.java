@@ -1,5 +1,6 @@
 package com.giftpile.entity;
 
+import com.giftpile.entity.GiftType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -41,6 +42,11 @@ public class Gift {
   @Column(name = "manual_received", nullable = false)
   private Boolean manualReceived = false;
 
+  /** Coarse gift type — distinguishes physical gifts from experiences. Defaults to GIFT. */
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private GiftType type = GiftType.GIFT;
+
   @Column(nullable = false)
   private Integer priority;
 
@@ -57,6 +63,9 @@ public class Gift {
     this.title = title;
     this.priority = priority;
   }
+
+  public GiftType getType() { return type; }
+  public void setType(GiftType type) { this.type = type; }
 
   @PreUpdate
   private void onUpdate() {

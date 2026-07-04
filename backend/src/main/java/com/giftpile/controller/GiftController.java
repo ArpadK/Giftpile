@@ -2,6 +2,7 @@ package com.giftpile.controller;
 
 import com.giftpile.dto.GiftDTO;
 import com.giftpile.entity.Gift;
+import com.giftpile.entity.GiftType;
 import com.giftpile.entity.User;
 import com.giftpile.exception.ForbiddenException;
 import com.giftpile.exception.NotFoundException;
@@ -146,11 +147,12 @@ public class GiftController {
     if (req.exactColor() != null) gift.setExactColor(req.exactColor());
     if (req.exactProduct() != null) gift.setExactProduct(req.exactProduct());
     if (req.onlyOnce() != null) gift.setOnlyOnce(req.onlyOnce());
+    if (req.type() != null) gift.setType(req.type());
   }
 
   public record GiftRequest(Long ownerId, String title, String link, String price,
                             String description, Boolean exactColor, Boolean exactProduct,
-                            Boolean onlyOnce) {}
+                            Boolean onlyOnce, GiftType type) {}
 
   public record ReceivedRequest(Boolean received) {}
 
