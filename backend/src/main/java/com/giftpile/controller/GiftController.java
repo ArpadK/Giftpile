@@ -87,6 +87,12 @@ public class GiftController {
     }
     Gift gift = requireEditableGift(id);
     gift.setManualReceived(req.received());
+    if (!req.received()) {
+      // Undo received: also clear any claims so the gift is fully active again.
+      // A gift can be effectively received via a past-dated claim even when manualReceived=false,
+      // so clearing only the flag without removing the claim would leave it stuck as received.
+      claimRepository.deleteAll(claimRepository.findByGiftId(id));
+    }
     return GiftDTO.of(giftRepository.save(gift), null, req.received());
   }
 

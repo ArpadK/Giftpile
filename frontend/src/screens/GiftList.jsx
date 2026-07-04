@@ -265,7 +265,7 @@ export function GiftList() {
           </div>
         )}
 
-        {receivedGifts.length > 0 && (
+        {canEdit && receivedGifts.length > 0 && (
           <div className="gift-list__received-section">
             <label className="gift-list__toggle-row">
               <input
