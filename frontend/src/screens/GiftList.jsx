@@ -6,6 +6,7 @@ import { GiftCard } from '../components/GiftCard'
 import { ClaimModal } from '../components/ClaimModal'
 import { GiftFormModal } from '../components/GiftFormModal'
 import { GiftDeleteConfirmModal } from '../components/GiftDeleteConfirmModal'
+import { FilterSheet } from '../components/FilterSheet'
 import { api } from '../lib/api'
 import './GiftList.css'
 
@@ -24,6 +25,10 @@ export function GiftList() {
   const [ownerName, setOwnerName] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showReceivedGifts, setShowReceivedGifts] = useState(false)
+
+  const [showFilterSheet, setShowFilterSheet] = useState(false)
+  const [priceMin, setPriceMin] = useState('')
+  const [priceMax, setPriceMax] = useState('')
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingGift, setEditingGift] = useState(null)
@@ -64,6 +69,27 @@ export function GiftList() {
 
   const activeGifts = gifts.filter(g => !g.manualReceived && !g.effectiveReceived)
   const receivedGifts = gifts.filter(g => g.manualReceived || g.effectiveReceived)
+
+  const hasActiveFilter = priceMin !== '' || priceMax !== ''
+
+  function parsePrice(price) {
+    if (price == null) return null
+    const num = parseFloat(String(price).replace(/[^0-9.]/g, ''))
+    return isNaN(num) ? null : num
+  }
+
+  const filteredActiveGifts = hasActiveFilter ? activeGifts.filter(g => {
+    const p = parsePrice(g.price)
+    if (p === null) return true
+    if (priceMin !== '' && p < parseFloat(priceMin)) return false
+    if (priceMax !== '' && p > parseFloat(priceMax)) return false
+    return true
+  }) : activeGifts
+
+  function handleFilterApply({ priceMin: min, priceMax: max }) {
+    setPriceMin(min)
+    setPriceMax(max)
+  }
 
   async function handleSaveGift(formData) {
     try {
@@ -171,7 +197,26 @@ export function GiftList() {
           <span>Admin mode — you're editing someone else's list. You can't see who will receive which gift.</span>
         </div>
       )}
-      <TopBar title={screenTitle} subtitle={screenSubtitle} showBack backTo={backTo} />
+      <TopBar
+        title={screenTitle}
+        subtitle={screenSubtitle}
+        showBack
+        backTo={backTo}
+        actions={!canEdit && (
+          <div className="topbar__icon-wrap">
+            <button
+              className="topbar__icon"
+              aria-label="Filter gifts"
+              onClick={() => setShowFilterSheet(true)}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+            </button>
+            {hasActiveFilter && <span className="topbar__dot" />}
+          </div>
+        )}
+      />
 
       <div className="gift-list__content">
         {canEdit && (
@@ -183,22 +228,22 @@ export function GiftList() {
           </button>
         )}
 
-        {activeGifts.length === 0 ? (
+        {filteredActiveGifts.length === 0 ? (
           <div className="gift-list__empty-state">
             <svg className="gift-list__empty-icon" viewBox="0 0 64 64" fill="none">
               <path d="M32 8C20 8 10 18 10 30V50C10 56 14 62 20 62H44C50 62 54 56 54 50V30C54 18 44 8 32 8Z" stroke="currentColor" strokeWidth="2" fill="none"/>
               <path d="M22 28H42M22 38H42M22 48H32" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             <h3 className="gift-list__empty-title">
-              {canEdit ? 'No gift ideas yet' : 'No gift ideas'}
+              {hasActiveFilter ? 'No gifts match your filter' : canEdit ? 'No gift ideas yet' : 'No gift ideas'}
             </h3>
             <p className="gift-list__empty-text">
-              {canEdit ? 'Add your first gift idea using the button above' : 'Check back soon'}
+              {hasActiveFilter ? 'Try a wider price range' : canEdit ? 'Add your first gift idea using the button above' : 'Check back soon'}
             </p>
           </div>
         ) : (
           <div className="gift-list__active-stack">
-            {activeGifts.map((gift, idx) => (
+            {filteredActiveGifts.map((gift, idx) => (
               <GiftCard
                 key={gift.id}
                 gift={gift}
@@ -278,6 +323,15 @@ export function GiftList() {
           gift={deletingGift}
           onConfirm={() => handleDeleteGift(deletingGift.id)}
           onCancel={() => setDeletingGift(null)}
+        />
+      )}
+
+      {!canEdit && showFilterSheet && (
+        <FilterSheet
+          priceMin={priceMin}
+          priceMax={priceMax}
+          onApply={handleFilterApply}
+          onClose={() => setShowFilterSheet(false)}
         />
       )}
     </div>

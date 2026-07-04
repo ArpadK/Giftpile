@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import './TopBar.css'
 
-export function TopBar({ title, subtitle, showBack = false, backTo = '/', showLogout = false, onLogout }) {
+export function TopBar({ title, subtitle, showBack = false, backTo = '/', showLogout = false, onLogout, actions }) {
   const navigate = useNavigate()
 
   return (
@@ -30,6 +30,7 @@ export function TopBar({ title, subtitle, showBack = false, backTo = '/', showLo
           </svg>
         </button>
       )}
+      {actions}
     </div>
   )
 }

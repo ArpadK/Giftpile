@@ -84,6 +84,18 @@
   margin-bottom: 8px;
 }
 
+/* Horizontal input row (e.g. min/max price range) */
+.sheet__input-row {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: 14px;
+}
+
+.sheet__input-row .sheet__input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
 /* Custom checkbox rows */
 .sheet__check-row {
   display: flex;

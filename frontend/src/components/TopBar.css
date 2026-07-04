@@ -52,3 +52,20 @@
   font-size: 12px;
   opacity: 0.75;
 }
+
+.topbar__icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.topbar__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid var(--color-primary);
+  pointer-events: none;
+}
