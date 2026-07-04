@@ -14,8 +14,8 @@ never sees claim data, and gifts claimed by someone else are hidden from other v
 - **Frontend** (`frontend/`, npm/Vite): React 19, Vite 6, React Router 7 — plain CSS with design
   tokens (`src/tokens.css`), no component library. All API calls go through `src/lib/api.js`.
 - **Database**: SQLite file by default (`jdbc:sqlite:giftpile.db`); Postgres opt-in via
-  `DATABASE_URL` + `DB_DIALECT` env vars. Schema via `ddl-auto=update` (Flyway migrations exist
-  but are disabled).
+  `DATABASE_URL` + `DB_DIALECT` env vars. Schema managed by **Flyway** (`V1__init.sql` runs on
+  both databases). `baseline-on-migrate=true` so existing databases (pre-Flyway) upgrade cleanly.
 - **Design reference**: `design_handoff_gift_list_app/` (HTML prototype + screenshots + README).
   Treat it as the source of truth for visuals; the app is the "Giftly" design rebranded Giftpile.
 

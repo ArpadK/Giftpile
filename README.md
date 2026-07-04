@@ -90,6 +90,33 @@ published package is **private** by default — either make it public (GitHub �
 giftpile → settings → change visibility) or `docker login ghcr.io` on the server with a
 read-packages PAT.
 
+### Reverse proxy (nginx, Caddy, Traefik, …)
+
+When the app is accessed through a reverse proxy over HTTPS, the browser sends requests with
+`Origin: https://your-domain.com`. The backend must recognise that origin or the browser's CORS
+check blocks every API call (visible as 403 responses on login).
+
+Set `APP_CORS_ALLOWED_ORIGINS` to your public domain and forward the original protocol so
+Spring can reconstruct the correct URL:
+
+```yaml
+environment:
+  DATABASE_URL: jdbc:sqlite:/app/data/giftpile.db
+  APP_CORS_ALLOWED_ORIGINS: https://your-domain.com
+```
+
+For nginx, also add `proxy_set_header X-Forwarded-Proto $scheme;` to the `location` block so
+session cookies are issued with the `Secure` flag and redirects use the right scheme:
+
+```nginx
+location / {
+    proxy_set_header Host              $host;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_pass http://giftpile:8080;
+}
+```
+
 ## Database
 
 - **SQLite (default)**: no configuration; the database is a `giftpile.db` file in the working
