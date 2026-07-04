@@ -8,16 +8,15 @@ import com.giftpile.entity.User;
 import com.giftpile.repository.ClaimRepository;
 import com.giftpile.repository.GiftRepository;
 import com.giftpile.repository.UserRepository;
+import com.giftpile.service.CurrentUserService;
 import com.giftpile.service.GiftVisibilityService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
+/** Public user listing and per-user gift lists (filtered by the reveal rules). */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -25,61 +24,53 @@ public class UserController {
   private final GiftRepository giftRepository;
   private final ClaimRepository claimRepository;
   private final GiftVisibilityService visibilityService;
+  private final CurrentUserService currentUser;
 
   public UserController(UserRepository userRepository, GiftRepository giftRepository,
-                        ClaimRepository claimRepository, GiftVisibilityService visibilityService) {
+                        ClaimRepository claimRepository, GiftVisibilityService visibilityService,
+                        CurrentUserService currentUser) {
     this.userRepository = userRepository;
     this.giftRepository = giftRepository;
     this.claimRepository = claimRepository;
     this.visibilityService = visibilityService;
+    this.currentUser = currentUser;
   }
 
-  private User getCurrentUser() {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    return userRepository.findByName(auth.getName()).orElse(null);
-  }
-
+  /** Public (pre-login) listing: names and colors only, so the login screen can render. */
   @GetMapping
-  public ResponseEntity<List<PublicUserDTO>> getAllUsers() {
-    List<PublicUserDTO> users = userRepository.findAll().stream()
-      .map(PublicUserDTO::from)
-      .collect(Collectors.toList());
-    return ResponseEntity.ok(users);
+  public List<PublicUserDTO> getAllUsers() {
+    return userRepository.findAll().stream().map(PublicUserDTO::from).toList();
   }
 
   @GetMapping("/{id}/gifts/count")
-  public ResponseEntity<Map<String, Long>> getGiftCount(@PathVariable Long id) {
-    List<Gift> gifts = giftRepository.findByOwnerId(id);
-    long activeCount = gifts.stream()
+  public Map<String, Long> getGiftCount(@PathVariable Long id) {
+    long activeCount = giftRepository.findByOwnerId(id).stream()
       .filter(g -> !g.getManualReceived())
       .count();
-    return ResponseEntity.ok(Map.of("activeCount", activeCount));
+    return Map.of("activeCount", activeCount);
   }
 
+  /**
+   * A user's gift list as seen by the current viewer. Viewing your own list is a blind context:
+   * every gift is shown but claim data never is. Viewing someone else's list applies the reveal
+   * rules (claimed/received gifts hidden) and attaches only the viewer's own claim.
+   */
   @GetMapping("/{id}/gifts")
-  public ResponseEntity<List<GiftDTO>> getGifts(@PathVariable Long id) {
-    User viewer = getCurrentUser();
-    if (viewer == null) return ResponseEntity.status(401).build();
+  public List<GiftDTO> getGifts(@PathVariable Long id) {
+    User viewer = currentUser.require();
+    boolean isBlindContext = id.equals(viewer.getId());
+    LocalDate today = LocalDate.now();
 
     List<Gift> gifts = giftRepository.findByOwnerIdOrderByStatus(id);
-    boolean isBlindContext = id.equals(viewer.getId());
+    List<Gift> visible = visibilityService.filterForViewer(gifts, viewer.getId(), id, isBlindContext);
 
-    List<Gift> filtered = visibilityService.filterForViewer(gifts, viewer.getId(), id, isBlindContext);
-
-    List<GiftDTO> dtos = filtered.stream()
+    return visible.stream()
       .map(gift -> {
-        Claim claim = null;
-        if (!isBlindContext) {
-          Optional<Claim> maybeClaim = claimRepository.findByClaimerUserIdAndGiftId(viewer.getId(), gift.getId());
-          if (maybeClaim.isPresent()) {
-            claim = maybeClaim.get();
-          }
-        }
-        boolean effectiveReceived = visibilityService.isEffectiveReceived(gift, claim, java.time.LocalDate.now());
-        return new GiftDTO(gift, claim, effectiveReceived);
+        Claim claim = isBlindContext
+          ? null
+          : claimRepository.findByClaimerUserIdAndGiftId(viewer.getId(), gift.getId()).orElse(null);
+        return GiftDTO.of(gift, claim, visibilityService.isEffectiveReceived(gift, claim, today));
       })
-      .collect(Collectors.toList());
-
-    return ResponseEntity.ok(dtos);
+      .toList();
   }
 }

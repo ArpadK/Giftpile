@@ -18,4 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
    * @return Optional containing the user if found
    */
   Optional<User> findByName(String name);
+
+  /** Number of users with the admin role. */
+  long countByIsAdminTrue();
 }

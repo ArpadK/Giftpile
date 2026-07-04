@@ -4,17 +4,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Giftpile is a self-hostable family wishlist application. Tech stack (all to be implemented — no code exists yet):
+Giftpile is a self-hostable family wishlist application. Family members keep gift lists; others
+secretly "claim" gifts to give. Core invariant: the owner of a list (and an admin editing it)
+never sees claim data, and gifts claimed by someone else are hidden from other viewers.
 
-- **Backend**: Java 25, Spring Boot 4.1.0, Maven 3.9+, Spring Data JPA + Hibernate 7.x, Flyway 11, Spring Security 7.x (session auth, BCrypt), Jsoup 1.20.1 (OG parsing)
-- **Frontend**: React 19, Vite 6, React Router 7, Node 22 LTS — plain CSS with design tokens, no component library
-- **Database**: SQLite (default, via xerial sqlite-jdbc 3.49.1.0) or Postgres (opt-in via `DATABASE_URL` env var)
-- **Testing**: JUnit 5 + Testcontainers 1.21.0 (backend); Vitest 3 + React Testing Library 16 + Playwright 1.52 (frontend)
-- **Deploy**: Docker Compose (`backend/` + `frontend/` each with a multi-stage Dockerfile)
+- **Backend** (`backend/`, Maven): Java 25, Spring Boot 4.1.0, Spring Data JPA + Hibernate 7,
+  Spring Security 7 (session auth, BCrypt), Jsoup (link-preview scraping), Jackson 3
+  (`tools.jackson` packages — not `com.fasterxml`).
+- **Frontend** (`frontend/`, npm/Vite): React 19, Vite 6, React Router 7 — plain CSS with design
+  tokens (`src/tokens.css`), no component library. All API calls go through `src/lib/api.js`.
+- **Database**: SQLite file by default (`jdbc:sqlite:giftpile.db`); Postgres opt-in via
+  `DATABASE_URL` + `DB_DIALECT` env vars. Schema via `ddl-auto=update` (Flyway migrations exist
+  but are disabled).
+- **Design reference**: `design_handoff_gift_list_app/` (HTML prototype + screenshots + README).
+  Treat it as the source of truth for visuals; the app is the "Giftly" design rebranded Giftpile.
 
-Project layout: `backend/` (Maven) and `frontend/` (npm/Vite) are independent build roots.
+## Commands
 
-Once code exists, update this file with the actual build/test/run commands.
+Backend (from `backend/`):
+- `mvn test` — full suite. H2-based controller/service tests need no Docker; `IntegrationTestBase`
+  subclasses use Testcontainers/Postgres and do need Docker.
+- `mvn spring-boot:run` — dev server on :8080 (creates `giftpile.db` in the working dir).
+
+Frontend (from `frontend/`): **requires Node 22 — run `nvm use` first** (the default shell node
+may be an ancient version that breaks npm/vite).
+- `npm run dev` — Vite on :5173, proxies `/api` to :8080.
+- `npm test` / `npx vitest run` — unit tests.
+- `npm run build` — production build.
+- `npm run e2e` — Playwright (starts both servers per `playwright.config.js`; assumes seeded users).
+
+Full stack: `docker compose up --build` → http://localhost:8080 (backend serves the built SPA;
+SQLite on a named volume). Postgres variant: `docker compose --profile postgres up --build`.
+
+First run: the app has no users; the `/` screen shows a create-admin form (bootstrap endpoint
+`POST /api/auth/users` works only while the users table is empty and always creates an admin).
+
+## Conventions
+
+- KISS is the guiding principle: no speculative abstractions, delete dead code, prefer the
+  boring solution.
+- API errors always return `{ "message": "..." }` (see `ApiExceptionHandler` + `ErrorResponse`);
+  controllers throw `NotFoundException` / `ForbiddenException` / `IllegalArgumentException`
+  instead of hand-building error responses. The frontend surfaces `error.message` from
+  `src/lib/api.js`.
+- Request/response DTOs are Java records; request records live as nested types in their controller.
+- Gift visibility rules live in ONE place per side: `GiftVisibilityService` (backend). Don't
+  duplicate them.
 
 ## Spec-driven workflow (OpenSpec)
 

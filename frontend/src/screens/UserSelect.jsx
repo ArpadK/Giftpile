@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { UserRow } from '../components/UserRow'
+import { api } from '../lib/api'
 import './UserSelect.css'
 
 export function UserSelect() {
@@ -17,25 +18,11 @@ export function UserSelect() {
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    fetchUsers()
+    api.get('/api/users')
+      .then(setUsers)
+      .catch((err) => console.error('Failed to fetch users:', err))
+      .finally(() => setLoading(false))
   }, [])
-
-  async function fetchUsers() {
-    try {
-      const res = await fetch('/api/auth/users')
-      if (!res.ok) throw new Error('Failed to fetch users')
-      const data = await res.json()
-      setUsers(data)
-    } catch (err) {
-      console.error('Failed to fetch users:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function handleSelectUser(userId) {
-    navigate(`/login/${userId}`)
-  }
 
   async function handleCreateFirstAdmin(e) {
     e.preventDefault()
@@ -46,21 +33,15 @@ export function UserSelect() {
     }
     setCreating(true)
     try {
-      const res = await fetch('/api/auth/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: setupName.trim(), password: setupPassword }),
+      const created = await api.post('/api/auth/users', {
+        name: setupName.trim(),
+        password: setupPassword,
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.message || 'Failed to create account')
-      }
-      const created = await res.json()
       // Sign the new admin straight in.
       await login(created.id, setupPassword)
       navigate('/home')
     } catch (err) {
-      setSetupError(err.message || 'Failed to create account')
+      setSetupError(err.message)
     } finally {
       setCreating(false)
     }
@@ -120,7 +101,7 @@ export function UserSelect() {
                 <UserRow
                   key={user.id}
                   user={user}
-                  onClick={() => handleSelectUser(user.id)}
+                  onClick={() => navigate(`/login/${user.id}`)}
                 />
               ))}
             </div>

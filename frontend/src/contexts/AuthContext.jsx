@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { api } from '../lib/api'
 
 const AuthContext = createContext(null)
 
@@ -7,46 +8,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Restore session on mount
-    restoreSession()
+    // Restore an existing session on mount; a 401 just means "not signed in".
+    api.get('/api/auth/me')
+      .then(setCurrentUser)
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
-  async function restoreSession() {
-    try {
-      const res = await fetch('/api/auth/me', {
-        credentials: 'include',
-      })
-      if (res.ok) {
-        const user = await res.json()
-        setCurrentUser(user)
-      }
-    } catch (err) {
-      console.error('Failed to restore session:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   async function login(userId, password) {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, password }),
-      credentials: 'include',
-    })
-    if (!res.ok) {
-      throw new Error('Invalid credentials')
-    }
-    const user = await res.json()
+    const user = await api.post('/api/auth/login', { userId, password })
     setCurrentUser(user)
     return user
   }
 
   async function logout() {
-    await fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    })
+    await api.post('/api/auth/logout')
     setCurrentUser(null)
   }
 

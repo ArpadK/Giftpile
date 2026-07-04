@@ -1,12 +1,14 @@
 package com.giftpile.controller;
 
 import com.giftpile.service.LinkPreviewService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.util.Map;
 
+/** Best-effort product-image lookup for a gift link. An empty imageUrl means "no image found". */
 @RestController
 @RequestMapping("/api/link-preview")
 public class LinkPreviewController {
@@ -17,15 +19,10 @@ public class LinkPreviewController {
   }
 
   @GetMapping
-  public ResponseEntity<?> getPreview(@RequestParam String url) {
-    try {
-      String decodedUrl = URLDecoder.decode(url, StandardCharsets.UTF_8);
-      String imageUrl = linkPreviewService.fetchImageUrl(decodedUrl);
-      return ResponseEntity.ok(Map.of("imageUrl", imageUrl != null ? imageUrl : ""));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-    } catch (Exception e) {
-      return ResponseEntity.ok(Map.of("imageUrl", ""));
-    }
+  public Map<String, String> getPreview(@RequestParam String url) {
+    // Note: Spring has already URL-decoded the query parameter — do not decode again.
+    // Invalid/internal URLs throw IllegalArgumentException → 400 via the ApiExceptionHandler.
+    String imageUrl = linkPreviewService.fetchImageUrl(url);
+    return Map.of("imageUrl", imageUrl != null ? imageUrl : "");
   }
 }

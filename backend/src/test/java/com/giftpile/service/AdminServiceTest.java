@@ -321,15 +321,6 @@ class AdminServiceTest {
   }
 
   @Test
-  @DisplayName("getAllUsers returns correct list of users")
-  void testGetAllUsersReturnsCorrectList() {
-    List<User> users = adminService.getAllUsers();
-    assertThat(users).hasSize(3)
-      .extracting(User::getName)
-      .contains("admin1", "admin2", "user");
-  }
-
-  @Test
   @DisplayName("Deletion only affects the target user's gifts, not others")
   void testDeletionOnlyAffectsTargetUserGifts() {
     // Create gifts for both users

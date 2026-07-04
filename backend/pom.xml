@@ -75,11 +75,11 @@
       <artifactId>hibernate-community-dialects</artifactId>
     </dependency>
 
-    <!-- H2 Database (runtime) -->
+    <!-- H2 Database (tests only — production uses SQLite or Postgres) -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <scope>runtime</scope>
+      <scope>test</scope>
     </dependency>
 
     <!-- PostgreSQL JDBC (managed by BOM) -->
@@ -108,13 +108,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Spring Boot Web Test -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-test-autoconfigure</artifactId>
       <scope>test</scope>
     </dependency>
 

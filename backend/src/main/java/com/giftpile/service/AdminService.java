@@ -1,12 +1,12 @@
 package com.giftpile.service;
 
 import com.giftpile.entity.User;
+import com.giftpile.exception.NotFoundException;
 import com.giftpile.repository.ClaimRepository;
 import com.giftpile.repository.GiftRepository;
 import com.giftpile.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -48,13 +48,8 @@ public class AdminService {
     }
 
     // Guardrail 2: Cannot delete the last admin
-    if (user.getIsAdmin()) {
-      long adminCount = userRepository.findAll().stream()
-        .filter(User::getIsAdmin)
-        .count();
-      if (adminCount == 1) {
-        return Optional.of("Cannot delete the last admin");
-      }
+    if (user.getIsAdmin() && userRepository.countByIsAdminTrue() == 1) {
+      return Optional.of("Cannot delete the last admin");
     }
 
     return Optional.empty();
@@ -70,7 +65,7 @@ public class AdminService {
   @Transactional
   public void deleteUser(Long userId) {
     User user = userRepository.findById(userId)
-      .orElseThrow(() -> new RuntimeException("User not found"));
+      .orElseThrow(() -> new NotFoundException("User not found"));
 
     // Cascade delete gifts and claims
     giftRepository.findByOwnerId(user.getId()).forEach(gift -> {
@@ -84,23 +79,8 @@ public class AdminService {
     userRepository.delete(user);
   }
 
-  /**
-   * Returns the count of admin users.
-   *
-   * @return the number of users with admin role
-   */
+  /** Number of users with the admin role. */
   public long getAdminCount() {
-    return userRepository.findAll().stream()
-      .filter(User::getIsAdmin)
-      .count();
-  }
-
-  /**
-   * Returns all users.
-   *
-   * @return list of all users
-   */
-  public List<User> getAllUsers() {
-    return userRepository.findAll();
+    return userRepository.countByIsAdminTrue();
   }
 }

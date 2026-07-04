@@ -1,95 +1,96 @@
 package com.giftpile.controller;
 
-import com.giftpile.dto.GiftDTO;
+import com.giftpile.dto.ErrorResponse;
 import com.giftpile.entity.Claim;
 import com.giftpile.entity.Gift;
 import com.giftpile.entity.User;
+import com.giftpile.exception.NotFoundException;
 import com.giftpile.repository.ClaimRepository;
 import com.giftpile.repository.GiftRepository;
-import com.giftpile.repository.UserRepository;
+import com.giftpile.service.CurrentUserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/** Claiming ("I'll give this") on other people's gifts: create, move the date, or withdraw. */
 @RestController
-@RequestMapping("/api/gifts")
+@RequestMapping("/api/gifts/{giftId}/claim")
 public class ClaimController {
   private final GiftRepository giftRepository;
   private final ClaimRepository claimRepository;
-  private final UserRepository userRepository;
+  private final CurrentUserService currentUser;
 
-  public ClaimController(GiftRepository giftRepository, ClaimRepository claimRepository, UserRepository userRepository) {
+  public ClaimController(GiftRepository giftRepository, ClaimRepository claimRepository,
+                         CurrentUserService currentUser) {
     this.giftRepository = giftRepository;
     this.claimRepository = claimRepository;
-    this.userRepository = userRepository;
+    this.currentUser = currentUser;
   }
 
-  private User getCurrentUser() {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    return userRepository.findByName(auth.getName()).orElse(null);
-  }
+  @PostMapping
+  public ResponseEntity<?> claimGift(@PathVariable Long giftId, @RequestBody ClaimRequest req) {
+    User claimer = currentUser.require();
+    requireGiftDate(req);
 
-  @PostMapping("/{id}/claim")
-  public ResponseEntity<?> claimGift(@PathVariable Long id, @RequestBody ClaimRequest req) {
-    User claimer = getCurrentUser();
-    if (claimer == null) return ResponseEntity.status(401).build();
+    Gift gift = giftRepository.findById(giftId)
+      .orElseThrow(() -> new NotFoundException("Gift not found"));
 
-    Gift gift = giftRepository.findById(id)
-      .orElseThrow(() -> new RuntimeException("Gift not found"));
+    if (gift.getOwner().getId().equals(claimer.getId())) {
+      throw new IllegalArgumentException("You cannot claim a gift on your own list");
+    }
 
-    if (!gift.getOnlyOnce()) {
-      // Repeatable gift: allow multiple claims
-      Claim claim = new Claim(gift, claimer, req.giftDate);
+    // Re-claiming a gift you already claimed just moves the date (prevents duplicate claims,
+    // which would otherwise break the one-claim-per-user-per-gift lookups).
+    Optional<Claim> existing = claimRepository.findByClaimerUserIdAndGiftId(claimer.getId(), giftId);
+    if (existing.isPresent()) {
+      Claim claim = existing.get();
+      claim.setGiftDate(req.giftDate());
       claimRepository.save(claim);
-      return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("claimed", true));
+      return ResponseEntity.ok(Map.of("claimed", true));
     }
 
-    // Non-repeatable gift: check if already claimed
-    List<Claim> existingClaims = claimRepository.findByGiftId(id);
-    if (!existingClaims.isEmpty() && !existingClaims.get(0).getClaimerUser().getId().equals(claimer.getId())) {
-      return ResponseEntity.status(409).body(Map.of("error", "Gift already claimed by another user"));
+    // Non-repeatable gifts allow only one claim in total; any existing claim is someone else's.
+    if (gift.getOnlyOnce() && !claimRepository.findByGiftId(giftId).isEmpty()) {
+      return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(new ErrorResponse("Gift already claimed by another user"));
     }
 
-    Claim claim = new Claim(gift, claimer, req.giftDate);
-    claimRepository.save(claim);
+    claimRepository.save(new Claim(gift, claimer, req.giftDate()));
     return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("claimed", true));
   }
 
-  @PutMapping("/{id}/claim")
-  public ResponseEntity<?> updateClaim(@PathVariable Long id, @RequestBody ClaimRequest req) {
-    User claimer = getCurrentUser();
-    if (claimer == null) return ResponseEntity.status(401).build();
+  @PutMapping
+  public Map<String, Boolean> updateClaim(@PathVariable Long giftId, @RequestBody ClaimRequest req) {
+    User claimer = currentUser.require();
+    requireGiftDate(req);
 
-    Gift gift = giftRepository.findById(id)
-      .orElseThrow(() -> new RuntimeException("Gift not found"));
+    Claim claim = claimRepository.findByClaimerUserIdAndGiftId(claimer.getId(), giftId)
+      .orElseThrow(() -> new NotFoundException("Claim not found"));
 
-    Claim claim = claimRepository.findByClaimerUserIdAndGiftId(claimer.getId(), id)
-      .orElseThrow(() -> new RuntimeException("Claim not found"));
-
-    claim.setGiftDate(req.giftDate);
+    claim.setGiftDate(req.giftDate());
     claimRepository.save(claim);
-    return ResponseEntity.ok(Map.of("updated", true));
+    return Map.of("updated", true);
   }
 
-  @DeleteMapping("/{id}/claim")
-  public ResponseEntity<Void> unclaimGift(@PathVariable Long id) {
-    User claimer = getCurrentUser();
-    if (claimer == null) return ResponseEntity.status(401).build();
-
-    Claim claim = claimRepository.findByClaimerUserIdAndGiftId(claimer.getId(), id)
-      .orElseThrow(() -> new RuntimeException("Claim not found"));
+  @DeleteMapping
+  public ResponseEntity<Void> unclaimGift(@PathVariable Long giftId) {
+    User claimer = currentUser.require();
+    Claim claim = claimRepository.findByClaimerUserIdAndGiftId(claimer.getId(), giftId)
+      .orElseThrow(() -> new NotFoundException("Claim not found"));
 
     claimRepository.delete(claim);
     return ResponseEntity.ok().build();
   }
 
-  public static class ClaimRequest {
-    public LocalDate giftDate;
+  private void requireGiftDate(ClaimRequest req) {
+    if (req.giftDate() == null) {
+      throw new IllegalArgumentException("Gift date is required");
+    }
   }
+
+  public record ClaimRequest(LocalDate giftDate) {}
 }

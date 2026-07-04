@@ -1,47 +1,32 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import { TopBar } from '../components/TopBar'
 import { UserFormModal } from '../components/UserFormModal'
 import { DeleteUserConfirmModal } from '../components/DeleteUserConfirmModal'
 import { AdminEditConfirmModal } from '../components/AdminEditConfirmModal'
+import { api } from '../lib/api'
 import './AdminPanel.css'
 
 export function AdminPanel() {
   const navigate = useNavigate()
-  const { currentUser } = useAuth()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Modal states
-  const [showUserFormModal, setShowUserFormModal] = useState(false)
+  // Modal state: which user a modal is acting on (null = closed)
+  const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingUser, setDeletingUser] = useState(null)
   const [deleteError, setDeleteError] = useState('')
-  const [showAdminEditModal, setShowAdminEditModal] = useState(false)
   const [adminEditUser, setAdminEditUser] = useState(null)
 
   useEffect(() => {
-    if (!currentUser?.isAdmin) {
-      navigate('/home')
-      return
-    }
     loadUsers()
-  }, [currentUser, navigate])
+  }, [])
 
   async function loadUsers() {
     try {
-      const res = await fetch('/api/admin/users', {
-        credentials: 'include',
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setUsers(data)
-      } else {
-        setError('Failed to load users')
-      }
+      setUsers(await api.get('/api/admin/users'))
     } catch (err) {
       console.error('Failed to load users:', err)
       setError('Failed to load users')
@@ -50,81 +35,30 @@ export function AdminPanel() {
     }
   }
 
-  function handleAddUser() {
-    setEditingUser(null)
-    setShowUserFormModal(true)
-  }
-
-  function handleEditUser(user) {
-    setEditingUser(user)
-    setShowUserFormModal(true)
-  }
-
-  function handleDeleteUser(user) {
-    setDeletingUser(user)
-    setDeleteError('')
-    setShowDeleteModal(true)
-  }
-
-  function handleViewEditList(user) {
-    setAdminEditUser(user)
-    setShowAdminEditModal(true)
-  }
-
   async function handleSaveUser(formData) {
+    setError('')
     try {
-      const url = editingUser
-        ? `/api/admin/users/${editingUser.id}`
-        : '/api/admin/users'
-      const method = editingUser ? 'PUT' : 'POST'
-
-      const res = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      if (res.ok) {
-        setShowUserFormModal(false)
-        loadUsers()
+      if (editingUser) {
+        await api.put(`/api/admin/users/${editingUser.id}`, formData)
       } else {
-        const errorData = await res.json()
-        setError(errorData.message || 'Failed to save user')
+        await api.post('/api/admin/users', formData)
       }
+      setShowUserForm(false)
+      setEditingUser(null)
+      await loadUsers()
     } catch (err) {
-      console.error('Failed to save user:', err)
-      setError('Failed to save user')
+      setError(err.message)
     }
   }
 
-  async function handleConfirmDelete(userName) {
+  async function handleConfirmDelete() {
     if (!deletingUser) return
-
     try {
-      const res = await fetch(`/api/admin/users/${deletingUser.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-
-      if (res.ok) {
-        setShowDeleteModal(false)
-        setDeletingUser(null)
-        loadUsers()
-      } else {
-        const errorData = await res.json()
-        setDeleteError(errorData.message || 'Failed to delete user')
-      }
+      await api.delete(`/api/admin/users/${deletingUser.id}`)
+      setDeletingUser(null)
+      await loadUsers()
     } catch (err) {
-      console.error('Failed to delete user:', err)
-      setDeleteError('Failed to delete user')
-    }
-  }
-
-  function handleConfirmAdminEdit() {
-    if (adminEditUser) {
-      setShowAdminEditModal(false)
-      navigate(`/admin/list/${adminEditUser.id}`)
+      setDeleteError(err.message)
     }
   }
 
@@ -145,7 +79,7 @@ export function AdminPanel() {
       <div className="admin-panel__content">
         {error && <div className="error-banner">{error}</div>}
 
-        <button className="add-user-btn" onClick={handleAddUser}>
+        <button className="add-user-btn" onClick={() => { setEditingUser(null); setShowUserForm(true) }}>
           + Add family member
         </button>
 
@@ -163,29 +97,31 @@ export function AdminPanel() {
                 <div className="user-card__actions">
                   <button
                     className="icon-btn"
+                    aria-label={`Edit ${user.name}`}
                     title="Edit user"
-                    onClick={() => handleEditUser(user)}
+                    onClick={() => { setEditingUser(user); setShowUserForm(true) }}
                   >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M3 16.5L14.586 4.914C14.9465 4.55358 15.5535 4.55358 15.914 4.914L16.5 5.5C16.8604 5.86046 16.8604 6.46746 16.5 6.828L4.914 18.414M3 16.5L3.5 14.5L5.5 16.5M3 16.5H1V18.5H3V16.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                     </svg>
                   </button>
                   <button
                     className="icon-btn icon-btn--danger"
+                    aria-label={`Delete ${user.name}`}
                     title="Delete user"
-                    onClick={() => handleDeleteUser(user)}
+                    onClick={() => { setDeletingUser(user); setDeleteError('') }}
                   >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M2.5 5H17.5M8.5 9V15M11.5 9V15M3.5 5L4.5 17C4.5 17.5304 4.72064 18.0391 5.12132 18.4142C5.52201 18.7893 6.06031 19 6.62 19H13.38C13.9397 19 14.478 18.7893 14.8787 18.4142C15.2794 18.0391 15.5 17.5304 15.5 17L16.5 5M7 5V3.5C7 3.36193 7.05268 3.22955 7.14645 3.13579C7.24021 3.04204 7.37259 2.99 7.51 2.99H12.49C12.6274 2.99 12.7598 3.04204 12.8536 3.13579C12.9473 3.22955 13 3.36193 13 3.5V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                     </svg>
                   </button>
                 </div>
               </div>
 
-              <button
-                className="user-card__list-btn"
-                onClick={() => handleViewEditList(user)}
-              >
+              <button className="user-card__list-btn" onClick={() => setAdminEditUser(user)}>
                 View / edit their list
               </button>
             </div>
@@ -193,28 +129,28 @@ export function AdminPanel() {
         </div>
       </div>
 
-      {showUserFormModal && (
+      {showUserForm && (
         <UserFormModal
           user={editingUser}
           onSave={handleSaveUser}
-          onClose={() => setShowUserFormModal(false)}
+          onClose={() => { setShowUserForm(false); setEditingUser(null) }}
         />
       )}
 
-      {showDeleteModal && deletingUser && (
+      {deletingUser && (
         <DeleteUserConfirmModal
           user={deletingUser}
           error={deleteError}
           onConfirm={handleConfirmDelete}
-          onCancel={() => setShowDeleteModal(false)}
+          onCancel={() => setDeletingUser(null)}
         />
       )}
 
-      {showAdminEditModal && adminEditUser && (
+      {adminEditUser && (
         <AdminEditConfirmModal
           userName={adminEditUser.name}
-          onConfirm={handleConfirmAdminEdit}
-          onCancel={() => setShowAdminEditModal(false)}
+          onConfirm={() => navigate(`/admin/list/${adminEditUser.id}`)}
+          onCancel={() => setAdminEditUser(null)}
         />
       )}
     </div>

@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
-import { AnimatedScreen } from './components/AnimatedScreen'
 import { UserSelect } from './screens/UserSelect'
 import { PasswordStep } from './screens/PasswordStep'
 import { Home } from './screens/Home'
@@ -40,55 +39,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={
-          <AnimatedScreen>
-            <PublicRoute>
-              <UserSelect />
-            </PublicRoute>
-          </AnimatedScreen>
-        } />
-        <Route path="/login/:userId" element={
-          <AnimatedScreen>
-            <PublicRoute>
-              <PasswordStep />
-            </PublicRoute>
-          </AnimatedScreen>
-        } />
-        <Route path="/home" element={
-          <AnimatedScreen>
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          </AnimatedScreen>
-        } />
-        <Route path="/list/me" element={
-          <AnimatedScreen>
-            <ProtectedRoute>
-              <GiftList />
-            </ProtectedRoute>
-          </AnimatedScreen>
-        } />
-        <Route path="/list/:userId" element={
-          <AnimatedScreen>
-            <ProtectedRoute>
-              <GiftList />
-            </ProtectedRoute>
-          </AnimatedScreen>
-        } />
-        <Route path="/admin" element={
-          <AnimatedScreen>
-            <AdminRoute>
-              <AdminPanel />
-            </AdminRoute>
-          </AnimatedScreen>
-        } />
-        <Route path="/admin/list/:userId" element={
-          <AnimatedScreen>
-            <AdminRoute>
-              <GiftList />
-            </AdminRoute>
-          </AnimatedScreen>
-        } />
+        <Route path="/" element={<PublicRoute><UserSelect /></PublicRoute>} />
+        <Route path="/login/:userId" element={<PublicRoute><PasswordStep /></PublicRoute>} />
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/list/me" element={<ProtectedRoute><GiftList /></ProtectedRoute>} />
+        <Route path="/list/:userId" element={<ProtectedRoute><GiftList /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+        <Route path="/admin/list/:userId" element={<AdminRoute><GiftList /></AdminRoute>} />
       </Routes>
     </Router>
   )

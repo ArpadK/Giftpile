@@ -9,6 +9,9 @@ import { test, expect } from '@playwright/test'
  * - Logout from Home screen redirects to user-select
  *
  * Prerequisites: Backend running on http://localhost:8080 with test data.
+ * The seed assumption still holds: at least one user must exist. With NO users,
+ * UserSelect renders the first-run "Create admin account" setup form instead of
+ * the "Who's this?" user picker these tests rely on.
  */
 
 test.describe('Authentication Flow', () => {
@@ -66,9 +69,9 @@ test.describe('Authentication Flow', () => {
     const cardTitle = page.locator('.cta-card__title')
     await expect(cardTitle).toContainText('My gift list')
 
-    // Verify gift count is displayed (even if 0)
+    // Verify gift count is displayed (even if 0) — subtext reads "N ideas" (or "1 idea")
     const cardSubtext = page.locator('.cta-card__subtext')
-    await expect(cardSubtext).toContainText(/\d+ active ideas/)
+    await expect(cardSubtext).toContainText(/\d+ ideas?/)
   })
 
   test('should display Home screen correctly after login with gift count', async ({ page }) => {
@@ -94,18 +97,19 @@ test.describe('Authentication Flow', () => {
     const myGiftListCard = page.locator('.cta-card')
     await expect(myGiftListCard).toBeVisible()
 
-    // Check for card icon (🎁)
+    // Check for card icon (an inline SVG gift glyph, not an emoji)
     const cardIcon = page.locator('.cta-card__icon')
-    await expect(cardIcon).toContainText('🎁')
+    await expect(cardIcon).toBeVisible()
+    await expect(cardIcon.locator('svg')).toBeVisible()
 
     // Check for card title
     const cardTitle = page.locator('.cta-card__title')
     await expect(cardTitle).toContainText('My gift list')
 
-    // Check for subtext showing active gift count
+    // Check for subtext showing active gift count ("N ideas" / "1 idea")
     const cardSubtext = page.locator('.cta-card__subtext')
     const subtextContent = await cardSubtext.textContent()
-    expect(subtextContent).toMatch(/\d+ active ideas/)
+    expect(subtextContent).toMatch(/\d+ ideas?/)
 
     // Verify the card is clickable (has chevron)
     const chevron = page.locator('.cta-card__chevron')
@@ -149,7 +153,7 @@ test.describe('Authentication Flow', () => {
     // Perform login
     const userRows = page.locator('.user-row')
     const firstUserElement = userRows.first()
-    const userNameBefore = await firstUserElement.locator('.user-name').textContent()
+    const userNameBefore = await firstUserElement.locator('.user-row__name').textContent()
 
     await firstUserElement.click()
 

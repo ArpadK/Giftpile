@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { api } from '../lib/api'
 import './GiftCard.css'
 
 /** Display a price with a leading euro sign, tolerating legacy values that already have a symbol. */
@@ -80,18 +81,11 @@ export function GiftCard({
     setImageUrl(null)
 
     if (gift.link) {
-      ;(async () => {
-        try {
-          const encoded = encodeURIComponent(gift.link)
-          const response = await fetch(`/api/link-preview?url=${encoded}`, { credentials: 'include' })
-          if (response.ok) {
-            const data = await response.json()
-            if (active && data.imageUrl) setImageUrl(data.imageUrl)
-          }
-        } catch (err) {
-          console.error('Failed to fetch preview:', err)
-        }
-      })()
+      api.get(`/api/link-preview?url=${encodeURIComponent(gift.link)}`)
+        .then((data) => {
+          if (active && data?.imageUrl) setImageUrl(data.imageUrl)
+        })
+        .catch(() => {}) // Previews are best-effort; the placeholder cover stays.
     }
 
     return () => { active = false }

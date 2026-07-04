@@ -138,7 +138,7 @@ public class ClaimingIntegrationTest {
         .contentType("application/json")
         .content("{\"giftDate\":\"" + LocalDate.now() + "\"}"))
       .andExpect(status().isConflict())
-      .andExpect(jsonPath("$.error").value("Gift already claimed by another user"));
+      .andExpect(jsonPath("$.message").value("Gift already claimed by another user"));
 
     // Verify only Bob's claim exists
     assert claimRepository.findByGiftId(nonRepeatableGift.getId()).size() == 1;

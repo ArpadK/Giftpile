@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { api } from '../lib/api'
 import './PasswordStep.css'
 
 export function PasswordStep() {
@@ -17,37 +18,36 @@ export function PasswordStep() {
       navigate('/home')
       return
     }
-    fetchUser()
-  }, [currentUser, navigate])
-
-  async function fetchUser() {
-    try {
-      const res = await fetch('/api/auth/users')
-      const users = await res.json()
-      const u = users.find(x => x.id === parseInt(userId))
-      setUser(u)
-    } catch (err) {
-      console.error('Failed to fetch user:', err)
-    }
-  }
+    api.get('/api/users')
+      .then((users) => {
+        const selected = users.find(u => u.id === Number(userId))
+        if (selected) {
+          setUser(selected)
+        } else {
+          navigate('/', { replace: true })
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch user:', err)
+        navigate('/', { replace: true })
+      })
+  }, [currentUser, userId, navigate])
 
   async function handleSignIn(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      await login(parseInt(userId), password)
+      await login(Number(userId), password)
       navigate('/home')
     } catch (err) {
-      setError('Invalid password')
+      setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  if (!user) return <div>Loading...</div>
-
-  const avatarBg = user.color || 'var(--color-primary)'
+  if (!user) return null
 
   return (
     <div className="password-step">
@@ -61,7 +61,7 @@ export function PasswordStep() {
         </button>
 
         <div className="header">
-          <div className="avatar" style={{ backgroundColor: avatarBg }}>
+          <div className="avatar" style={{ backgroundColor: user.color || 'var(--color-primary)' }}>
             {user.name.charAt(0).toUpperCase()}
           </div>
           <h1>Hi, {user.name}</h1>

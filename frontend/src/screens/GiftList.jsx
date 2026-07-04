@@ -1,58 +1,59 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { TopBar } from '../components/TopBar'
 import { GiftCard } from '../components/GiftCard'
 import { ClaimModal } from '../components/ClaimModal'
 import { GiftFormModal } from '../components/GiftFormModal'
 import { GiftDeleteConfirmModal } from '../components/GiftDeleteConfirmModal'
+import { api } from '../lib/api'
 import './GiftList.css'
 
 /**
- * GiftList screen — displays gifts for owner, viewer, and admin-edit modes.
- *
- * Owner view: Full CRUD controls (add, edit, delete, mark received, undo, move up/down)
- * Viewer view: Claim controls ("I'll get this one", edit/unclaim for own claims)
- * Admin-edit view: Owner controls with amber banner warning
+ * GiftList screen — one component for three contexts:
+ * - Owner view (/list/me): full CRUD (add, edit, delete, mark received, reorder)
+ * - Viewer view (/list/:userId): claim controls, reveal rules applied by the backend
+ * - Admin-edit view (/admin/list/:userId): owner controls on someone else's list, with a banner
  */
 export function GiftList() {
   const { userId } = useParams()
-  const navigate = useNavigate()
   const location = useLocation()
   const { currentUser } = useAuth()
 
   const [gifts, setGifts] = useState([])
-  const [showReceivedGifts, setShowReceivedGifts] = useState(false)
+  const [ownerName, setOwnerName] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showReceivedGifts, setShowReceivedGifts] = useState(false)
+
   const [showAddModal, setShowAddModal] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [editingGift, setEditingGift] = useState(null)
+  const [deletingGift, setDeletingGift] = useState(null)
   const [claimingGift, setClaimingGift] = useState(null)
   const [claimEditMode, setClaimEditMode] = useState(false)
-  const [ownerName, setOwnerName] = useState(null)
 
-  const targetUserId = userId ? parseInt(userId) : currentUser?.id
-  const isOwner = targetUserId === currentUser?.id
+  const targetUserId = userId ? Number(userId) : currentUser.id
+  const isOwner = targetUserId === currentUser.id
   const isAdminEdit = location.pathname.startsWith('/admin/list/')
+  const canEdit = isOwner || isAdminEdit
 
   useEffect(() => {
-    if (!currentUser) {
-      navigate('/')
-      return
-    }
     loadGifts()
-  }, [userId, currentUser, navigate])
+  }, [targetUserId])
+
+  // Resolve the list owner's name for the header (when viewing someone else's list).
+  useEffect(() => {
+    if (isOwner) return
+    api.get('/api/users')
+      .then((users) => {
+        const owner = users.find(u => u.id === targetUserId)
+        if (owner) setOwnerName(owner.name)
+      })
+      .catch((err) => console.error('Failed to fetch owner:', err))
+  }, [isOwner, targetUserId])
 
   async function loadGifts() {
     try {
-      const res = await fetch(`/api/users/${targetUserId}/gifts`, {
-        credentials: 'include',
-      })
-      if (!res.ok) {
-        if (res.status === 401) navigate('/')
-        throw new Error('Failed to load gifts')
-      }
-      const data = await res.json()
+      const data = await api.get(`/api/users/${targetUserId}/gifts`)
       setGifts(data || [])
     } catch (err) {
       console.error('Failed to load gifts:', err)
@@ -61,106 +62,48 @@ export function GiftList() {
     }
   }
 
-  // Resolve the list owner's name for the header (when viewing someone else's list).
-  useEffect(() => {
-    if (isOwner || !targetUserId) return
-    async function loadOwner() {
-      try {
-        const res = await fetch(`/api/users`, { credentials: 'include' })
-        if (res.ok) {
-          const users = await res.json()
-          const owner = users.find(u => u.id === targetUserId)
-          if (owner) setOwnerName(owner.name)
-        }
-      } catch (err) {
-        console.error('Failed to fetch owner:', err)
-      }
-    }
-    loadOwner()
-  }, [isOwner, targetUserId])
-
   const activeGifts = gifts.filter(g => !g.manualReceived && !g.effectiveReceived)
   const receivedGifts = gifts.filter(g => g.manualReceived || g.effectiveReceived)
-  const hasReceivedGifts = receivedGifts.length > 0
 
-  async function handleAddGift(formData) {
+  async function handleSaveGift(formData) {
     try {
-      const res = await fetch('/api/gifts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          // Target the list being viewed so admins adding in admin-edit mode create the
-          // gift on the correct user's list (not their own).
-          ownerId: targetUserId,
-          ...formData,
-        }),
-      })
-      if (!res.ok) throw new Error('Failed to add gift')
-      const newGift = await res.json()
-      setGifts([newGift, ...activeGifts, ...receivedGifts])
+      if (editingGift) {
+        await api.put(`/api/gifts/${editingGift.id}`, formData)
+      } else {
+        await api.post('/api/gifts', { ownerId: targetUserId, ...formData })
+      }
       setShowAddModal(false)
-    } catch (err) {
-      console.error('Failed to add gift:', err)
-    }
-  }
-
-  async function handleEditGift(giftId, formData) {
-    try {
-      const res = await fetch(`/api/gifts/${giftId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      })
-      if (!res.ok) throw new Error('Failed to edit gift')
-      const updated = await res.json()
-      setGifts(gifts.map(g => (g.id === giftId ? updated : g)))
       setEditingGift(null)
+      await loadGifts()
     } catch (err) {
-      console.error('Failed to edit gift:', err)
+      console.error('Failed to save gift:', err)
+      alert(err.message)
     }
   }
 
   async function handleDeleteGift(giftId) {
     try {
-      const res = await fetch(`/api/gifts/${giftId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (!res.ok) throw new Error('Failed to delete gift')
-      setGifts(gifts.filter(g => g.id !== giftId))
-      setShowDeleteConfirm(null)
+      await api.delete(`/api/gifts/${giftId}`)
+      setDeletingGift(null)
+      await loadGifts()
     } catch (err) {
       console.error('Failed to delete gift:', err)
+      alert(err.message)
     }
   }
 
   async function handleMarkReceived(giftId, received) {
     try {
-      const res = await fetch(`/api/gifts/${giftId}/received`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ received }),
-      })
-      if (!res.ok) throw new Error('Failed to update gift')
-      const updated = await res.json()
-      setGifts(gifts.map(g => (g.id === giftId ? updated : g)))
+      await api.patch(`/api/gifts/${giftId}/received`, { received })
+      await loadGifts()
     } catch (err) {
-      console.error('Failed to mark gift:', err)
+      console.error('Failed to update gift:', err)
     }
   }
 
   async function handleMovePriority(giftId, direction) {
     try {
-      const res = await fetch(`/api/gifts/${giftId}/priority`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ direction }),
-      })
-      if (!res.ok) throw new Error('Failed to move gift')
+      await api.patch(`/api/gifts/${giftId}/priority`, { direction })
       await loadGifts()
     } catch (err) {
       console.error('Failed to move gift:', err)
@@ -171,53 +114,38 @@ export function GiftList() {
     if (!claimingGift) return
     try {
       if (claimEditMode && claimingGift.claim) {
-        // Update existing claim
-        const res = await fetch(`/api/gifts/${claimingGift.id}/claim`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ giftDate }),
-        })
-        if (!res.ok) throw new Error('Failed to update claim')
+        await api.put(`/api/gifts/${claimingGift.id}/claim`, { giftDate })
       } else {
-        // Create new claim
-        const res = await fetch(`/api/gifts/${claimingGift.id}/claim`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ giftDate }),
-        })
-        // 409 means someone else already claimed it — surface a clear message.
-        if (res.status === 409) {
-          alert('This gift was already claimed by someone else.')
-        } else if (!res.ok) {
-          throw new Error('Failed to claim gift')
-        }
+        await api.post(`/api/gifts/${claimingGift.id}/claim`, { giftDate })
       }
-      setClaimingGift(null)
-      setClaimEditMode(false)
+      closeClaimModal()
       await loadGifts()
     } catch (err) {
       console.error('Failed to claim gift:', err)
-      alert('Failed to claim gift')
+      alert(err.message)
     }
   }
 
   async function handleUnclaimGift() {
     if (!claimingGift) return
     try {
-      const res = await fetch(`/api/gifts/${claimingGift.id}/claim`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (!res.ok) throw new Error('Failed to unclaim gift')
-      setClaimingGift(null)
-      setClaimEditMode(false)
+      await api.delete(`/api/gifts/${claimingGift.id}/claim`)
+      closeClaimModal()
       await loadGifts()
     } catch (err) {
       console.error('Failed to unclaim gift:', err)
-      alert('Failed to unclaim gift')
+      alert(err.message)
     }
+  }
+
+  function openClaimModal(gift) {
+    setClaimingGift(gift)
+    setClaimEditMode(!!gift.claim)
+  }
+
+  function closeClaimModal() {
+    setClaimingGift(null)
+    setClaimEditMode(false)
   }
 
   const screenTitle = isOwner ? 'My gift list' : (ownerName || 'Gift list')
@@ -246,8 +174,7 @@ export function GiftList() {
       <TopBar title={screenTitle} subtitle={screenSubtitle} showBack backTo={backTo} />
 
       <div className="gift-list__content">
-        {/* Add button (owner or admin-edit) */}
-        {(isOwner || isAdminEdit) && (
+        {canEdit && (
           <button className="gift-list__add-button" onClick={() => setShowAddModal(true)}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M9 2V16M2 9H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -256,7 +183,6 @@ export function GiftList() {
           </button>
         )}
 
-        {/* Active gifts section */}
         {activeGifts.length === 0 ? (
           <div className="gift-list__empty-state">
             <svg className="gift-list__empty-icon" viewBox="0 0 64 64" fill="none">
@@ -264,10 +190,10 @@ export function GiftList() {
               <path d="M22 28H42M22 38H42M22 48H32" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             <h3 className="gift-list__empty-title">
-              {isOwner ? 'No gift ideas yet' : 'No gift ideas'}
+              {canEdit ? 'No gift ideas yet' : 'No gift ideas'}
             </h3>
             <p className="gift-list__empty-text">
-              {isOwner ? 'Add your first gift idea using the button above' : 'Check back soon'}
+              {canEdit ? 'Add your first gift idea using the button above' : 'Check back soon'}
             </p>
           </div>
         ) : (
@@ -276,28 +202,22 @@ export function GiftList() {
               <GiftCard
                 key={gift.id}
                 gift={gift}
-                isOwner={isOwner || isAdminEdit}
+                isOwner={canEdit}
                 isReceived={false}
                 canMoveUp={idx > 0}
                 canMoveDown={idx < activeGifts.length - 1}
-                viewerClaim={!isOwner && !isAdminEdit ? gift.claim : null}
-                onEdit={() => (isOwner || isAdminEdit) && setEditingGift(gift)}
-                onDelete={() => (isOwner || isAdminEdit) && setShowDeleteConfirm(gift)}
-                onMarkReceived={() => (isOwner || isAdminEdit) && handleMarkReceived(gift.id, true)}
-                onMovePriority={(dir) => (isOwner || isAdminEdit) && handleMovePriority(gift.id, dir)}
-                onClaim={() => {
-                  if (!isOwner && !isAdminEdit) {
-                    setClaimingGift(gift)
-                    setClaimEditMode(!!gift.claim)
-                  }
-                }}
+                viewerClaim={canEdit ? null : gift.claim}
+                onEdit={() => setEditingGift(gift)}
+                onDelete={() => setDeletingGift(gift)}
+                onMarkReceived={() => handleMarkReceived(gift.id, true)}
+                onMovePriority={(dir) => handleMovePriority(gift.id, dir)}
+                onClaim={() => openClaimModal(gift)}
               />
             ))}
           </div>
         )}
 
-        {/* Received gifts section */}
-        {hasReceivedGifts && (
+        {receivedGifts.length > 0 && (
           <div className="gift-list__received-section">
             <label className="gift-list__toggle-row">
               <input
@@ -317,13 +237,12 @@ export function GiftList() {
                   <GiftCard
                     key={gift.id}
                     gift={gift}
-                    isOwner={isOwner || isAdminEdit}
+                    isOwner={canEdit}
                     isReceived={true}
-                    canMoveUp={false}
-                    canMoveDown={false}
-                    viewerClaim={!isOwner && !isAdminEdit ? gift.claim : null}
-                    onMarkReceived={() => (isOwner || isAdminEdit) && handleMarkReceived(gift.id, false)}
-                    onDelete={() => (isOwner || isAdminEdit) && setShowDeleteConfirm(gift)}
+                    viewerClaim={canEdit ? null : gift.claim}
+                    onMarkReceived={() => handleMarkReceived(gift.id, false)}
+                    onDelete={() => setDeletingGift(gift)}
+                    onClaim={() => openClaimModal(gift)}
                   />
                 ))}
               </div>
@@ -332,11 +251,10 @@ export function GiftList() {
         )}
       </div>
 
-      {/* Add/Edit Gift Modal (owner or admin-edit) */}
-      {(isOwner || isAdminEdit) && (showAddModal || editingGift) && (
+      {canEdit && (showAddModal || editingGift) && (
         <GiftFormModal
           gift={editingGift}
-          onSave={editingGift ? (data) => handleEditGift(editingGift.id, data) : handleAddGift}
+          onSave={handleSaveGift}
           onClose={() => {
             setShowAddModal(false)
             setEditingGift(null)
@@ -344,27 +262,22 @@ export function GiftList() {
         />
       )}
 
-      {/* Claim Modal (viewer only) */}
-      {!isOwner && !isAdminEdit && claimingGift && (
+      {!canEdit && claimingGift && (
         <ClaimModal
           gift={claimingGift}
           isEdit={claimEditMode}
           existingDate={claimingGift.claim?.giftDate}
           onClaim={handleClaimGift}
           onUnclaim={handleUnclaimGift}
-          onClose={() => {
-            setClaimingGift(null)
-            setClaimEditMode(false)
-          }}
+          onClose={closeClaimModal}
         />
       )}
 
-      {/* Delete Confirmation */}
-      {(isOwner || isAdminEdit) && showDeleteConfirm && (
+      {canEdit && deletingGift && (
         <GiftDeleteConfirmModal
-          gift={showDeleteConfirm}
-          onConfirm={() => handleDeleteGift(showDeleteConfirm.id)}
-          onCancel={() => setShowDeleteConfirm(null)}
+          gift={deletingGift}
+          onConfirm={() => handleDeleteGift(deletingGift.id)}
+          onCancel={() => setDeletingGift(null)}
         />
       )}
     </div>

@@ -632,7 +632,7 @@ public class GiftCRUDIntegrationTest {
     mockMvc.perform(patch("/api/gifts/" + gift.getId() + "/priority")
         .contentType("application/json")
         .content(requestBody))
-      .andExpect(status().isOk()); // Should be no-op, return OK
+      .andExpect(status().isBadRequest()); // Invalid direction is rejected
   }
 
   @Test

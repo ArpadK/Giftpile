@@ -1,261 +1,131 @@
 # Giftpile
 
-A self-hostable, mobile-first family wishlist application. Manage gift ideas, claim gifts to give, and coordinate family gift-giving with privacy-first claim visibility.
-
-## About
-
-Giftpile lets families collaborate on gift planning without spoilers. Create gift wishlists, claim gifts you want to give, and see real-time coordination with privacy built in—gift owners never see who claimed their items until the reveal date.
+A self-hostable, mobile-first family wishlist application. Family members keep gift lists,
+secretly claim gifts to give each other, and never spoil the surprise: the list owner never sees
+who is giving what, and a gift claimed by someone else disappears from everyone else's view.
 
 ## Tech Stack
 
-- **Backend**: Java 25, Spring Boot 4.1.0, Spring Data JPA + Hibernate, Spring Security (session-based auth), Jsoup (OG parsing), Flyway (migrations)
+- **Backend**: Java 25, Spring Boot 4.1, Spring Data JPA + Hibernate 7, Spring Security (session
+  auth, BCrypt), Jsoup (product-image scraping)
 - **Frontend**: React 19, Vite 6, React Router 7, plain CSS with design tokens
-- **Database**: SQLite (default), PostgreSQL (opt-in via `DATABASE_URL` env var)
-- **Build**: Maven 3.9+ (backend), npm 22 LTS (frontend)
-- **Deployment**: Docker & Docker Compose 27+ (multi-stage builds)
-- **Testing**: JUnit 5 + Testcontainers (backend), Vitest + React Testing Library + Playwright (frontend)
-
-## Prerequisites
-
-- **JDK 25** (Temurin or Eclipse)
-- **Node 22 LTS** (for frontend development)
-- **Maven 3.9+** (for backend development)
-- **Docker 27+** & **Docker Compose 27+** (for containerized deployment)
-
-Note: Docker and Docker Compose are only required if using the Docker Compose run mode. Local development and standalone fat-jar modes work with just JDK 25, Node 22, and Maven 3.9+.
+- **Database**: SQLite (default, zero-config) or PostgreSQL (opt-in)
+- **Testing**: JUnit 5 + Testcontainers (backend); Vitest + React Testing Library + Playwright (frontend)
 
 ## Running Giftpile
 
-Choose one of three run modes based on your needs:
-
-### 1. Docker Compose (Recommended for Production / Easy Setup)
-
-Run the entire stack in containers with a single command:
+### Docker Compose (recommended)
 
 ```bash
-docker compose up
+docker compose up --build
 # Open http://localhost:8080
 ```
 
-Frontend will rebuild on code changes (mounted volume). Backend restarts on code changes (mounted volume).
+The backend serves both the API and the built frontend. Data is stored in a SQLite file on a
+named volume, so it survives restarts.
 
-**Configuration:**
-- Giftpile backend: `http://localhost:8080`
-- Frontend dev server: `http://localhost:5173` (proxied via backend)
-- Database: SQLite in `giftpile.db` (volume-mounted)
-- Postgres support: Set `DATABASE_URL` in `docker-compose.override.yml` or pass as environment variable
+PostgreSQL instead of SQLite:
 
-**Using PostgreSQL:**
 ```bash
-# In docker-compose.override.yml or via environment
-DATABASE_URL=jdbc:postgresql://postgres:5432/giftpile?user=giftpile&password=giftpile docker compose up
+docker compose --profile postgres up --build
 ```
 
-### 2. Local Development (Best for Development)
+### Local development
 
-Run backend and frontend independently for faster iteration and better debugging.
+Backend (JDK 25 + Maven 3.9+):
 
-**Backend:**
 ```bash
 cd backend
-mvn clean spring-boot:run
-# Starts on http://localhost:8080
+mvn spring-boot:run        # http://localhost:8080, creates giftpile.db in backend/
 ```
 
-**Frontend** (separate terminal):
+Frontend (Node 22 — run `nvm use` in `frontend/` first):
+
 ```bash
 cd frontend
 npm install
-npm run dev
-# Starts on http://localhost:5173
-# Proxies API calls to http://localhost:8080
+npm run dev                # http://localhost:5173, proxies /api to :8080
 ```
 
-The frontend dev server will auto-reload on code changes. Backend requires a manual restart (Ctrl+C, re-run mvn command) unless using a hot-reload tool like Spring Boot DevTools.
+### Standalone JAR
 
-**Configuration:**
-- Default database: SQLite at `giftpile.db`
-- For Postgres:
+The Docker build bundles the frontend into the jar. To do the same locally:
+
+```bash
+cd frontend && npm run build
+mkdir -p ../backend/src/main/resources/static && cp -r dist/* ../backend/src/main/resources/static/
+cd ../backend && mvn clean package -DskipTests
+java -jar target/giftpile-backend-0.1.0.jar    # http://localhost:8080
+```
+
+## Database
+
+- **SQLite (default)**: no configuration; the database is a `giftpile.db` file in the working
+  directory (or `/app/data` on the Docker volume). The schema is created automatically.
+- **PostgreSQL**: set both environment variables and start normally:
+
   ```bash
-  export DATABASE_URL=jdbc:postgresql://localhost:5432/giftpile?user=giftpile&password=giftpile
-  cd backend && mvn clean spring-boot:run
+  export DATABASE_URL='jdbc:postgresql://localhost:5432/giftpile?user=giftpile&password=giftpile'
+  export DB_DIALECT='org.hibernate.dialect.PostgreSQLDialect'
   ```
 
-### 3. Standalone Fat JAR (Production / Single-Server Deployment)
+## First run
 
-Build and run as a single executable JAR with embedded frontend:
+Open the app — with an empty database the start screen shows a **"Create your admin account"**
+form. The first account is always an admin; once it exists, the setup form disappears and further
+family members are added through the Admin panel (`/admin`).
 
-```bash
-# Build backend (includes bundled frontend)
-cd backend
-mvn clean package -Pprod
-
-# Run the fat JAR
-java -jar target/giftpile-app.jar
-# Open http://localhost:8080
-```
-
-Frontend is embedded and served from the JAR. No separate npm process needed.
-
-**Configuration:**
-- Giftpile: `http://localhost:8080`
-- Database: SQLite in `giftpile.db` (same directory as JAR)
-- For Postgres:
-  ```bash
-  export DATABASE_URL=jdbc:postgresql://localhost:5432/giftpile?user=giftpile&password=giftpile
-  java -jar target/giftpile-app.jar
-  ```
-
-## Database Configuration
-
-Giftpile supports SQLite (default, zero-config) and PostgreSQL (opt-in).
-
-**SQLite (Default):**
-- No configuration needed.
-- Database file: `giftpile.db` in the working directory.
-- Good for single-user or small deployments.
-
-**PostgreSQL:**
-Set the `DATABASE_URL` environment variable:
-```bash
-export DATABASE_URL=jdbc:postgresql://localhost:5432/giftpile?user=giftpile&password=giftpile
-```
-
-Then start Giftpile using any of the three run modes above. The application will auto-create tables on first run via Flyway migrations.
-
-## First Run
-
-Giftpile requires at least one admin user to bootstrap. The pre-login screen is empty until users are created. Choose one of these methods:
-
-### Option 1: Bootstrap via API (Recommended)
-
-The `POST /api/admin/bootstrap` endpoint creates the first admin user. It is only available when no users exist.
-
-```bash
-curl -X POST http://localhost:8080/api/admin/bootstrap \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Alice",
-    "password": "secure_password_here",
-    "isAdmin": true
-  }'
-```
-
-Response:
-```json
-{
-  "id": 1,
-  "name": "Alice",
-  "color": "#4C5FE8",
-  "isAdmin": true
-}
-```
-
-Then visit `http://localhost:8080` and sign in.
-
-### Option 2: Seed via SQL (Docker / CI)
-
-For Docker Compose or CI/CD pipelines, add seed data directly in an init SQL script:
-
-```sql
-INSERT INTO users (name, password_hash, is_admin, color)
-VALUES (
-  'Alice',
-  '$2a$10$...',  -- bcrypt hash of your password
-  true,
-  '#4C5FE8'
-);
-```
-
-To generate a bcrypt hash, use:
-```bash
-# With Java (using Spring Security's BCryptPasswordEncoder)
-cd backend
-mvn exec:java -Dexec.mainClass="com.giftpile.util.PasswordHasher" -Dexec.args="your_password"
-
-# Or use an online bcrypt generator (not recommended for production)
-```
-
-Then place the SQL in a Flyway migration (e.g., `V2__seed_admin.sql`) and deploy.
-
-### Why Bootstrap?
-
-The app has no default credentials. The pre-login screen displays zero users until at least one is created. The bootstrap endpoint ensures secure, intentional setup:
-- Only works when the database is empty (no users exist)
-- Returns 403 if users already exist
-- The first user should always be an admin (they manage others via the Admin panel)
-
-Once the first admin is created, additional users can be added via the Admin panel (`/admin` route). The Admin panel provides a web UI for:
-- Adding new family members (with auto-assigned avatar colors)
-- Editing user names and passwords
-- Deleting users (with cascading removal of their gifts and claims)
-- Promoting/demoting admin status
+(The underlying bootstrap endpoint, `POST /api/auth/users`, only works while no users exist and
+returns 403 afterwards — there are no default credentials.)
 
 ## Testing
 
-**Backend Unit Tests (SQLite in-memory):**
 ```bash
-cd backend && mvn test
-```
-
-**Backend Integration Tests (Testcontainers + PostgreSQL):**
-```bash
-cd backend && mvn test -Pintegration
-```
-
-**Frontend Unit Tests:**
-```bash
-cd frontend && npm test
-```
-
-**Frontend E2E Tests (Playwright):**
-```bash
-cd frontend && npx playwright test
+cd backend && mvn test          # H2-based tests run everywhere; Testcontainers tests need Docker
+cd frontend && npx vitest run   # unit tests
+cd frontend && npm run e2e      # Playwright (starts both servers; expects seeded users)
 ```
 
 ## Project Structure
 
 ```
-backend/                     # Spring Boot REST API
+backend/                     # Spring Boot REST API (Maven)
 ├── src/main/java/com/giftpile/
-│   ├── entity/             # JPA entities
-│   ├── repository/         # Data access
-│   ├── service/            # Business logic
-│   ├── controller/         # REST endpoints
-│   └── config/             # Spring Security
-├── src/main/resources/db/migration/
-│   └── V1__init.sql        # Flyway schema
-└── pom.xml
+│   ├── entity/              # JPA entities (User, Gift, Claim)
+│   ├── repository/          # Spring Data repositories
+│   ├── service/             # Business rules (visibility, admin guardrails, link previews)
+│   ├── controller/          # REST endpoints (request records live here too)
+│   ├── exception/           # NotFound/Forbidden/Unauthorized + ApiExceptionHandler
+│   └── config/              # Security, SPA fallback
+└── src/test/java/           # JUnit tests
 
-frontend/                    # React + Vite app
+frontend/                    # React + Vite app (npm)
 ├── src/
-│   ├── screens/            # Pages
-│   ├── components/         # Reusable UI
-│   ├── contexts/           # Auth state
-│   └── tokens.css          # Design system
-├── index.html
-├── vite.config.js
-└── package.json
+│   ├── screens/             # Pages (UserSelect, PasswordStep, Home, GiftList, AdminPanel)
+│   ├── components/          # UI components (GiftCard, TopBar, bottom-sheet modals)
+│   ├── contexts/            # Auth session state
+│   ├── lib/api.js           # Fetch wrapper (all API calls go through this)
+│   └── tokens.css           # Design tokens
+└── src/__tests__/           # Vitest unit tests + Playwright e2e specs
+
+design_handoff_gift_list_app/  # Design reference (prototype + screenshots) — source of truth for visuals
+openspec/                      # Spec-driven change management
 ```
 
-## Features
+## How the reveal rules work
 
-- **User Accounts**: Family member login, admin role for user management.
-- **Gift Ideas**: CRUD with metadata (link, price, notes), flags (exact color/product, repeatable).
-- **Claiming**: Claim gifts with date, date-based auto-reveal for non-repeatable gifts.
-- **Privacy**: Gift owner never sees claim data; other viewers' claims hidden until revealed.
-- **Responsive**: Mobile-first design, pixel-perfect to handoff tokens.
+- A gift can be claimed by one person (unless it's marked *"can give more than once"*).
+- The claimer picks a gift date; the day **after** that date the gift automatically counts as
+  received.
+- The list **owner** never sees claim data — received gifts just move to their "received" section.
+- **Other viewers** never see gifts that are claimed by someone else or already received.
+- The **claimer** always sees their own claim and can change the date or withdraw it, even after
+  the reveal.
 
-## API Endpoints
+## API errors
 
-- `POST /api/auth/login` — Login
-- `GET /api/auth/users` — List users
-- `GET /api/users/{id}/gifts` — List gifts (visibility rules applied)
-- `POST /api/gifts` — Create gift
-- `POST /api/gifts/{id}/claim` — Claim gift
-- `GET /api/admin/users` — List users (admin only)
-
-See full API docs in CLAUDE.md.
+All error responses share one shape: `{ "message": "..." }` with an appropriate HTTP status
+(400/401/403/404/409). The frontend surfaces these messages directly.
 
 ## License
 
