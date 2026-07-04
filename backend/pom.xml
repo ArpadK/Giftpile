@@ -61,6 +61,13 @@
       <artifactId>flyway-core</artifactId>
     </dependency>
 
+    <!-- Flyway database-specific modules (Flyway 10+ split these out of core) -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <version>${flyway.version}</version>
+    </dependency>
+
     <!-- SQLite JDBC Driver (default database) -->
     <dependency>
       <groupId>org.xerial</groupId>
