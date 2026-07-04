@@ -15,6 +15,14 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
+  useEffect(() => {
+    function handleUnauthorized() {
+      setCurrentUser(null)
+    }
+    window.addEventListener('giftpile:unauthorized', handleUnauthorized)
+    return () => window.removeEventListener('giftpile:unauthorized', handleUnauthorized)
+  }, [])
+
   async function login(userId, password) {
     const user = await api.post('/api/auth/login', { userId, password })
     setCurrentUser(user)

@@ -139,6 +139,13 @@ Screen padding: 16-20px sides. Card internal padding: 14×16px. Gaps between sta
 - Gift cover images: in the prototype these are simulated via `picsum.photos/seed/{giftId}/400/300` placeholders whenever a link is present. In production, replace with a real link-preview/OpenGraph-image fetch (this typically requires a small backend proxy, since browsers can't fetch arbitrary cross-origin page metadata directly) — fall back to no image if the link has no fetchable preview or is empty.
 - All icons are inline SVG, Lucide-style (24×24, 2-2.4px stroke, rounded caps/joins, `currentColor`) — no icon font, no emoji.
 
+## Logo & Favicon
+Chosen direction: gift-box glyph on a rounded royal-blue square (`#4C5FE8`), Material/Android-style — same icon already used inline in the app's own header lockup, so the app icon, favicon, and in-app logo are all one consistent mark.
+- `logo/giftly-icon.svg` — 128×128 app icon (rounded-square, 28px corner radius at that scale — keep proportional if rescaling), white gift-box glyph, 5.2px stroke. Use for the PWA/app icon and any large placements (app stores, splash screens).
+- `logo/giftly-favicon.svg` — 32×32 simplified favicon variant (thinner 1.8px stroke tuned for legibility at small size, 8px corner radius). Use for `<link rel="icon">` and browser tab/bookmark contexts.
+- Both are plain SVG, single royal-blue fill (`#4C5FE8`) + white strokes, no gradients — safe to recolor the background square only if a dark-mode variant is ever needed (keep the glyph white).
+- Recommended production exports: 512×512 and 192×192 PNG (maskable, for Android/PWA manifest icons) plus a 32×32 and 16×16 PNG/ICO for classic favicon fallback — generate these by rasterizing `giftly-icon.svg` at those sizes.
+
 ## Files
 - `Giftly.dc.html` — the full interactive prototype (single-file React component). Every screen, modal, and interaction described above is implemented here and can be opened directly in a browser to click through the real behavior.
 - `screenshots/` — reference screenshots of every screen and modal, in flow order:

@@ -17,6 +17,9 @@ async function request(path, { method = 'GET', body } = {}) {
   const data = await res.json().catch(() => null)
 
   if (!res.ok) {
+    if (res.status === 401) {
+      window.dispatchEvent(new Event('giftpile:unauthorized'))
+    }
     const error = new Error(data?.message || `Request failed (${res.status})`)
     error.status = res.status
     throw error
