@@ -1,0 +1,14 @@
+# Runtime-only image used by CI (.github/workflows/build-and-publish.yml).
+#
+# Expects target/giftpile-backend-*.jar to be prebuilt on the runner with the frontend already
+# bundled into its static resources. Because this file has no RUN steps, buildx can assemble a
+# multi-arch (amd64 + arm64) image from the one platform-independent jar without any emulation.
+#
+# backend/Dockerfile is the self-contained variant that builds everything inside Docker
+# (used by docker compose).
+FROM eclipse-temurin:25-jre-alpine
+WORKDIR /app
+COPY target/giftpile-backend-*.jar app.jar
+EXPOSE 8080
+ENV JAVA_OPTS="-XX:+UseStringDeduplication"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

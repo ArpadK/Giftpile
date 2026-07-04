@@ -1,0 +1,79 @@
+# Builds, tests, and publishes the Giftpile image to the GitHub Container Registry.
+#
+# Strategy: the app is pure Java + static files, so we compile ONCE on the runner (running the
+# full test suites as a gate) and then package the same jar into a multi-arch image via
+# backend/Dockerfile.runtime — only the JRE base layer differs per architecture, so there is no
+# emulated (QEMU) compilation and the arm64 variant is essentially free.
+#
+# Pull on the home server with:  docker pull ghcr.io/arpadk/giftpile:latest
+name: Build & publish
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Test & build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npx vitest run
+          npm run build
+
+      - name: Bundle frontend into backend static resources
+        run: |
+          mkdir -p backend/src/main/resources/static
+          cp -r frontend/dist/* backend/src/main/resources/static/
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+
+      - name: Test & package backend
+        working-directory: backend
+        run: mvn --batch-mode package
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=tag
+            type=sha
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile.runtime
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

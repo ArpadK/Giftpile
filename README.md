@@ -58,6 +58,38 @@ cd ../backend && mvn clean package -DskipTests
 java -jar target/giftpile-backend-0.1.0.jar    # http://localhost:8080
 ```
 
+### Pre-built image (home server)
+
+Every push to `main` publishes a multi-arch image (amd64 + arm64) to the GitHub Container
+Registry via `.github/workflows/build-and-publish.yml`, gated on the full test suites.
+
+```bash
+docker pull ghcr.io/arpadk/giftpile:latest
+```
+
+Minimal `docker-compose.yml` for the server:
+
+```yaml
+services:
+  giftpile:
+    image: ghcr.io/arpadk/giftpile:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: jdbc:sqlite:/app/data/giftpile.db
+    volumes:
+      - giftpile-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  giftpile-data:
+```
+
+Tags: `latest` (main), `sha-<commit>`, and the tag name for `v*` releases. Note: the first
+published package is **private** by default — either make it public (GitHub → repo → Packages →
+giftpile → settings → change visibility) or `docker login ghcr.io` on the server with a
+read-packages PAT.
+
 ## Database
 
 - **SQLite (default)**: no configuration; the database is a `giftpile.db` file in the working
