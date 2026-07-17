@@ -53,6 +53,18 @@ export function GiftFormModal({ gift, onSave, onClose }) {
       setError('Title is required')
       return
     }
+    if (formData.title.length > 255) {
+      setError('Title must be 255 characters or fewer')
+      return
+    }
+    if (formData.link) {
+      try {
+        new URL(formData.link)
+      } catch {
+        setError('Link must be a valid URL (e.g. https://example.com)')
+        return
+      }
+    }
     if (!String(formData.price).trim()) {
       setError('Price is required')
       return
@@ -80,6 +92,7 @@ export function GiftFormModal({ gift, onSave, onClose }) {
         <input
           className="sheet__input"
           type="text"
+          maxLength={255}
           value={formData.title}
           onChange={(e) => setField('title', e.target.value)}
           placeholder="e.g. Wool socks"

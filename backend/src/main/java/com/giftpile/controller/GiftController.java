@@ -41,6 +41,9 @@ public class GiftController {
     if (req.title() == null || req.title().isBlank()) {
       throw new IllegalArgumentException("Title is required");
     }
+    if (req.title().length() > 255) {
+      throw new IllegalArgumentException("Title must be 255 characters or fewer");
+    }
     Long ownerId = req.ownerId() != null ? req.ownerId() : current.getId();
 
     // A user may only add gifts to their own list; admins may add to anyone's list.
@@ -67,7 +70,11 @@ public class GiftController {
   public GiftDTO updateGift(@PathVariable Long id, @RequestBody GiftRequest req) {
     Gift gift = requireEditableGift(id);
 
-    if (req.title() != null) gift.setTitle(req.title());
+    if (req.title() != null) {
+      if (req.title().isBlank()) throw new IllegalArgumentException("Title cannot be blank");
+      if (req.title().length() > 255) throw new IllegalArgumentException("Title must be 255 characters or fewer");
+      gift.setTitle(req.title());
+    }
     applyFields(gift, req);
 
     return GiftDTO.of(giftRepository.save(gift), null, false);
@@ -151,7 +158,10 @@ public class GiftController {
 
   private void applyFields(Gift gift, GiftRequest req) {
     if (req.link() != null) gift.setLink(req.link());
-    if (req.price() != null) gift.setPrice(req.price());
+    if (req.price() != null) {
+      if (req.price().length() > 255) throw new IllegalArgumentException("Price must be 255 characters or fewer");
+      gift.setPrice(req.price());
+    }
     if (req.description() != null) gift.setDescription(req.description());
     if (req.exactColor() != null) gift.setExactColor(req.exactColor());
     if (req.exactProduct() != null) gift.setExactProduct(req.exactProduct());

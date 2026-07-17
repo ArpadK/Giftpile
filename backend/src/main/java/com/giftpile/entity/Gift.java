@@ -21,13 +21,13 @@ public class Gift {
   @Column(nullable = false)
   private String title;
 
-  @Column
+  @Column(columnDefinition = "TEXT")
   private String link;
 
   @Column
   private String price;
 
-  @Column
+  @Column(columnDefinition = "TEXT")
   private String description;
 
   @Column(name = "exact_color", nullable = false)
