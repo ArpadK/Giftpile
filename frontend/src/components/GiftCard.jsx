@@ -122,7 +122,6 @@ export function GiftCard({
 
   const isRepeatable = !gift.onlyOnce
   const isExperience = gift.type === 'EXPERIENCE'
-  const hasTags = true // type tag is always shown
 
   return (
     <div className={`gift-card${viewerClaim ? ' gift-card--claimed-by-me' : ''}`}>
@@ -153,16 +152,14 @@ export function GiftCard({
           </a>
         )}
 
-        {hasTags && (
-          <div className="gift-card__tags">
-            <span className={`gift-card__tag gift-card__tag--${isExperience ? 'amber' : 'blue'}`}>
-              {isExperience ? '✨ Experience' : '🎁 Gift'}
-            </span>
-            {gift.exactColor && <span className="gift-card__tag gift-card__tag--violet">Exact color</span>}
-            {gift.exactProduct && <span className="gift-card__tag gift-card__tag--violet">Exact product</span>}
-            {isRepeatable && <span className="gift-card__tag gift-card__tag--teal">Can give more than once</span>}
-          </div>
-        )}
+        <div className="gift-card__tags">
+          <span className={`gift-card__tag gift-card__tag--${isExperience ? 'amber' : 'blue'}`}>
+            {isExperience ? '✨ Experience' : '🎁 Gift'}
+          </span>
+          {gift.exactColor && <span className="gift-card__tag gift-card__tag--violet">Exact color</span>}
+          {gift.exactProduct && <span className="gift-card__tag gift-card__tag--violet">Exact product</span>}
+          {isRepeatable && <span className="gift-card__tag gift-card__tag--teal">Can give more than once</span>}
+        </div>
 
         {/* Owner / admin-edit: action row */}
         {isOwner && (

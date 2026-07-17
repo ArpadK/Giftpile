@@ -44,7 +44,7 @@ export function GiftList() {
 
   useEffect(() => {
     loadGifts()
-  }, [targetUserId])
+  }, [targetUserId, isAdminEdit])
 
   // Resolve the list owner's name for the header (when viewing someone else's list).
   useEffect(() => {
@@ -59,7 +59,13 @@ export function GiftList() {
 
   async function loadGifts() {
     try {
-      const data = await api.get(`/api/users/${targetUserId}/gifts`)
+      // Admin-edit is a blind context (see every gift, no claim data) → use the admin endpoint.
+      // The regular endpoint would treat the admin as an ordinary viewer and hide claimed/
+      // received gifts, leaving them unable to edit the full list.
+      const path = isAdminEdit
+        ? `/api/admin/users/${targetUserId}/gifts`
+        : `/api/users/${targetUserId}/gifts`
+      const data = await api.get(path)
       setGifts(data || [])
     } catch (err) {
       console.error('Failed to load gifts:', err)
@@ -253,7 +259,7 @@ export function GiftList() {
                 isOwner={canEdit}
                 isReceived={false}
                 canMoveUp={idx > 0}
-                canMoveDown={idx < activeGifts.length - 1}
+                canMoveDown={idx < filteredActiveGifts.length - 1}
                 viewerClaim={canEdit ? null : gift.claim}
                 onEdit={() => setEditingGift(gift)}
                 onDelete={() => setDeletingGift(gift)}

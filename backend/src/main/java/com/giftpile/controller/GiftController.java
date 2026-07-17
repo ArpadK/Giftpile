@@ -12,6 +12,7 @@ import com.giftpile.repository.UserRepository;
 import com.giftpile.service.CurrentUserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Comparator;
@@ -73,6 +74,7 @@ public class GiftController {
   }
 
   @DeleteMapping("/{id}")
+  @Transactional
   public ResponseEntity<Void> deleteGift(@PathVariable Long id) {
     Gift gift = requireEditableGift(id);
     claimRepository.deleteAll(claimRepository.findByGiftId(id));
@@ -81,6 +83,7 @@ public class GiftController {
   }
 
   @PatchMapping("/{id}/received")
+  @Transactional
   public GiftDTO toggleReceived(@PathVariable Long id, @RequestBody ReceivedRequest req) {
     if (req.received() == null) {
       throw new IllegalArgumentException("'received' is required");
