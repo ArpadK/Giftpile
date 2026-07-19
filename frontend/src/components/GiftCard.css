@@ -187,6 +187,33 @@
 }
 
 /* Viewer: own claim bar */
+/* Guardian: badges naming who is giving each gift */
+.gift-card__claim-badges {
+  margin-top: var(--spacing-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gift-card__claim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--color-green-soft);
+  color: var(--color-green-text);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.gift-card__claim-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
 .gift-card__claim-bar {
   margin-top: var(--spacing-md);
   background-color: var(--color-green-soft);

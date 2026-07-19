@@ -53,6 +53,21 @@
   margin-bottom: 6px;
 }
 
+.sheet__hint {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin: 0 0 12px;
+}
+
+.sheet__parent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
 .sheet__input,
 .sheet__textarea {
   width: 100%;

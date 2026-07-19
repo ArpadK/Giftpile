@@ -57,7 +57,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(claim));
 
     // Filter in blind context (isBlindContext=true)
-    List<Gift> filtered = giftVisibilityService.filterForViewer(gifts, viewerUser.getId(), ownerUser.getId(), true);
+    List<Gift> filtered = giftVisibilityService.filterForViewer(gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.BLIND);
 
     // Gift should be shown
     assertEquals(1, filtered.size());
@@ -77,7 +77,7 @@ public class GiftVisibilityServiceTest {
 
     List<Gift> gifts = List.of(gift1, gift2);
 
-    List<Gift> filtered = giftVisibilityService.filterForViewer(gifts, viewerUser.getId(), ownerUser.getId(), true);
+    List<Gift> filtered = giftVisibilityService.filterForViewer(gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.BLIND);
 
     assertEquals(2, filtered.size());
   }
@@ -101,7 +101,7 @@ public class GiftVisibilityServiceTest {
 
     // Viewer is not the claimer, gift is non-repeatable, and claim date is in the future
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be hidden
     assertEquals(0, filtered.size());
@@ -123,7 +123,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(claim));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Received gifts are private to the owner: hidden from other viewers.
     assertEquals(0, filtered.size());
@@ -145,7 +145,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(claim));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Received gifts are private to the owner: hidden from other viewers.
     assertEquals(0, filtered.size());
@@ -169,7 +169,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(viewerClaim, otherClaim));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be shown (repeatable)
     assertEquals(1, filtered.size());
@@ -190,7 +190,7 @@ public class GiftVisibilityServiceTest {
 
     // ViewerUser is NOT a claimer, but gift is repeatable
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be shown (repeatable gifts shown to all)
     assertEquals(1, filtered.size());
@@ -212,7 +212,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(claim1, claim2));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be shown
     assertEquals(1, filtered.size());
@@ -234,7 +234,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(viewerClaim));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be shown (viewer is the claimer)
     assertEquals(1, filtered.size());
@@ -252,7 +252,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(new ArrayList<>());
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be shown (no claims)
     assertEquals(1, filtered.size());
@@ -375,7 +375,7 @@ public class GiftVisibilityServiceTest {
 
     // Different viewer (not the claimer)
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Received gifts are private to the owner: hidden from other viewers.
     assertEquals(0, filtered.size());
@@ -397,7 +397,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(claim));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be hidden because it's not yet effectively received
     assertEquals(0, filtered.size());
@@ -434,7 +434,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(3L)).thenReturn(List.of(claim3));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Should show gift1 (unclaimed) and gift2 (repeatable)
     // Should hide gift3 (non-repeatable claimed by other, not yet received)
@@ -458,7 +458,7 @@ public class GiftVisibilityServiceTest {
     when(claimRepository.findByGiftId(1L)).thenReturn(List.of(viewerClaim));
 
     List<Gift> filtered = giftVisibilityService.filterForViewer(
-        gifts, viewerUser.getId(), ownerUser.getId(), false);
+        gifts, viewerUser.getId(), ownerUser.getId(), com.giftpile.service.ViewContext.REVEAL);
 
     // Gift should be shown because viewer is the claimer
     assertEquals(1, filtered.size());

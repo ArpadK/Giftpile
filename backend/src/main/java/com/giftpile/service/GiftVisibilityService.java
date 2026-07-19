@@ -20,22 +20,23 @@ public class GiftVisibilityService {
    * Filters a list of gifts based on visibility rules for a specific viewer.
    *
    * Rules:
-   * - Blind context (owner viewing own list): all gifts shown, no claim data exposed
-   * - Non-repeatable claimed-by-others (non-blind): gift hidden until effectiveReceived
-   * - Repeatable gifts: shown to all, only viewer's own claim exposed (others' claims stripped)
+   * - Blind / guardian context: all gifts shown (guardian additionally gets claim data attached by
+   *   the caller; blind never does)
+   * - Reveal context, non-repeatable claimed-by-others: gift hidden until effectiveReceived
+   * - Reveal context, repeatable gifts: shown to all, only viewer's own claim exposed
    * - effectiveReceived: gift.manualReceived OR (onlyOnce && today > claim.giftDate)
    *
    * @param gifts the list of gifts to filter
    * @param viewerId the ID of the viewer
    * @param ownerId the ID of the gift list owner
-   * @param isBlindContext true if viewer is owner/admin editing owner's list
+   * @param context how the viewer relates to the list (see {@link ViewContext})
    * @return filtered list of gifts with claim data visibility applied
    */
-  public List<Gift> filterForViewer(List<Gift> gifts, Long viewerId, Long ownerId, boolean isBlindContext) {
+  public List<Gift> filterForViewer(List<Gift> gifts, Long viewerId, Long ownerId, ViewContext context) {
     LocalDate today = LocalDate.now();
 
     return gifts.stream()
-      .filter(gift -> shouldShowGift(gift, viewerId, ownerId, isBlindContext, today))
+      .filter(gift -> shouldShowGift(gift, viewerId, ownerId, context, today))
       .collect(Collectors.toList());
   }
 
@@ -45,14 +46,14 @@ public class GiftVisibilityService {
    * @param gift the gift to evaluate
    * @param viewerId the ID of the viewer
    * @param ownerId the ID of the gift list owner
-   * @param isBlindContext true if in blind context (owner or admin editing owner's list)
+   * @param context how the viewer relates to the list
    * @param today the current date for effectiveReceived computation
    * @return true if the gift should be shown to the viewer
    */
-  private boolean shouldShowGift(Gift gift, Long viewerId, Long ownerId, boolean isBlindContext, LocalDate today) {
-    // Blind context (owner viewing their own list, or admin editing it): show all gifts.
-    // Received gifts are only ever visible in this context.
-    if (isBlindContext) {
+  private boolean shouldShowGift(Gift gift, Long viewerId, Long ownerId, ViewContext context, LocalDate today) {
+    // Blind (owner / non-manager admin) and guardian (parent of the kid owner) both see every
+    // gift, including received ones. They differ only in whether the caller attaches claim data.
+    if (context == ViewContext.BLIND || context == ViewContext.GUARDIAN) {
       return true;
     }
 

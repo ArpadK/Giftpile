@@ -93,6 +93,11 @@ export function AdminPanel() {
                 <div className="user-card__info">
                   <div className="user-card__name">{user.name}</div>
                   {user.isAdmin && <div className="user-card__admin-label">Admin</div>}
+                  {user.isKid && (
+                    <div className="user-card__admin-label">
+                      Kid{user.canLogin ? '' : ' · no login'}
+                    </div>
+                  )}
                 </div>
                 <div className="user-card__actions">
                   <button
@@ -132,6 +137,7 @@ export function AdminPanel() {
       {showUserForm && (
         <UserFormModal
           user={editingUser}
+          allUsers={users}
           onSave={handleSaveUser}
           onClose={() => { setShowUserForm(false); setEditingUser(null) }}
         />

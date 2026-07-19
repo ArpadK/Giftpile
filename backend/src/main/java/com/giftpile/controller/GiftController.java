@@ -10,6 +10,7 @@ import com.giftpile.repository.ClaimRepository;
 import com.giftpile.repository.GiftRepository;
 import com.giftpile.repository.UserRepository;
 import com.giftpile.service.CurrentUserService;
+import com.giftpile.service.GuardianService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,13 +27,16 @@ public class GiftController {
   private final UserRepository userRepository;
   private final ClaimRepository claimRepository;
   private final CurrentUserService currentUser;
+  private final GuardianService guardianService;
 
   public GiftController(GiftRepository giftRepository, UserRepository userRepository,
-                        ClaimRepository claimRepository, CurrentUserService currentUser) {
+                        ClaimRepository claimRepository, CurrentUserService currentUser,
+                        GuardianService guardianService) {
     this.giftRepository = giftRepository;
     this.userRepository = userRepository;
     this.claimRepository = claimRepository;
     this.currentUser = currentUser;
+    this.guardianService = guardianService;
   }
 
   @PostMapping
@@ -46,13 +50,13 @@ public class GiftController {
     }
     Long ownerId = req.ownerId() != null ? req.ownerId() : current.getId();
 
-    // A user may only add gifts to their own list; admins may add to anyone's list.
-    if (!ownerId.equals(current.getId()) && !current.getIsAdmin()) {
-      throw new ForbiddenException("You can only add gifts to your own list");
-    }
-
     User owner = userRepository.findById(ownerId)
       .orElseThrow(() -> new NotFoundException("Owner not found"));
+
+    // A user may add gifts to their own list; admins to anyone's; guardians to their kid's.
+    if (!guardianService.canManageList(current, owner)) {
+      throw new ForbiddenException("You can only add gifts to your own list");
+    }
 
     int nextPriority = giftRepository.findByOwnerId(owner.getId()).stream()
       .mapToInt(Gift::getPriority)
@@ -145,13 +149,13 @@ public class GiftController {
     return ResponseEntity.ok().build();
   }
 
-  /** Loads the gift and verifies the current user may edit it (owner, or any admin). */
+  /** Loads the gift and verifies the current user may edit it (owner, admin, or a guardian). */
   private Gift requireEditableGift(Long id) {
     User current = currentUser.require();
     Gift gift = giftRepository.findById(id)
       .orElseThrow(() -> new NotFoundException("Gift not found"));
-    if (!gift.getOwner().getId().equals(current.getId()) && !current.getIsAdmin()) {
-      throw new ForbiddenException("Only the owner or an admin can change this gift");
+    if (!guardianService.canManageList(current, gift.getOwner())) {
+      throw new ForbiddenException("Only the owner, an admin, or a parent can change this gift");
     }
     return gift;
   }

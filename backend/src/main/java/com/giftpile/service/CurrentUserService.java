@@ -7,6 +7,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 /** Resolves the {@link User} behind the current security context. */
 @Service
 public class CurrentUserService {
@@ -27,5 +29,14 @@ public class CurrentUserService {
     }
     return userRepository.findByName(auth.getName())
       .orElseThrow(() -> new UnauthorizedException("Not signed in"));
+  }
+
+  /** The authenticated user if there is one, otherwise empty (never throws). */
+  public Optional<User> currentOptional() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || auth.getName() == null || "anonymousUser".equals(auth.getName())) {
+      return Optional.empty();
+    }
+    return userRepository.findByName(auth.getName());
   }
 }

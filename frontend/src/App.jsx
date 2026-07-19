@@ -44,6 +44,7 @@ function App() {
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/list/me" element={<ProtectedRoute><GiftList /></ProtectedRoute>} />
         <Route path="/list/:userId" element={<ProtectedRoute><GiftList /></ProtectedRoute>} />
+        <Route path="/manage/list/:userId" element={<ProtectedRoute><GiftList /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
         <Route path="/admin/list/:userId" element={<AdminRoute><GiftList /></AdminRoute>} />
       </Routes>

@@ -19,6 +19,14 @@ public class User {
   @Column(name = "is_admin", nullable = false)
   private Boolean isAdmin = false;
 
+  /** A kid account: a child whose list is curated by assigned parents (see kid_managers). */
+  @Column(name = "is_kid", nullable = false)
+  private Boolean isKid = false;
+
+  /** Whether this user may sign in. Kids can be created without login; normal users always can. */
+  @Column(name = "can_login", nullable = false)
+  private Boolean canLogin = true;
+
   @Column(nullable = false)
   private String color;
 
@@ -64,6 +72,22 @@ public class User {
 
   public void setIsAdmin(Boolean isAdmin) {
     this.isAdmin = isAdmin;
+  }
+
+  public Boolean getIsKid() {
+    return isKid;
+  }
+
+  public void setIsKid(Boolean isKid) {
+    this.isKid = isKid;
+  }
+
+  public Boolean getCanLogin() {
+    return canLogin;
+  }
+
+  public void setCanLogin(Boolean canLogin) {
+    this.canLogin = canLogin;
   }
 
   public String getColor() {

@@ -344,6 +344,33 @@ describe('GiftCard', () => {
     })
   })
 
+  describe('guardian claim badges', () => {
+    const claim = { claimerUserId: 9, claimerName: 'Grandma', claimerColor: '#FF6B6B', giftDate: '2026-12-05' }
+
+    it('names the claimer when otherClaims is provided', () => {
+      render(<GiftCard {...defaultProps} isOwner={false} otherClaims={[claim]} />)
+      expect(screen.getByText(/Grandma/)).toBeInTheDocument()
+      expect(screen.getByText(/2026-12-05/)).toBeInTheDocument()
+    })
+
+    it('hides the claim button for a one-time gift already taken by someone else', () => {
+      const gift = { ...defaultGift, onlyOnce: true }
+      render(<GiftCard {...defaultProps} gift={gift} isOwner={false} otherClaims={[claim]} />)
+      expect(screen.queryByText("I'll get this one")).not.toBeInTheDocument()
+    })
+
+    it('still offers the claim button for a repeatable gift claimed by someone else', () => {
+      const gift = { ...defaultGift, onlyOnce: false }
+      render(<GiftCard {...defaultProps} gift={gift} isOwner={false} otherClaims={[claim]} />)
+      expect(screen.getByText("I'll get this one")).toBeInTheDocument()
+    })
+
+    it('shows no badges when otherClaims is empty', () => {
+      render(<GiftCard {...defaultProps} isOwner={false} otherClaims={[]} />)
+      expect(screen.queryByText(/Grandma/)).not.toBeInTheDocument()
+    })
+  })
+
   describe('link handling', () => {
     it('should render "View item" link when link is present', () => {
       const gift = { ...defaultGift, link: 'https://example.com/gift' }

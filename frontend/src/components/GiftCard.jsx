@@ -71,6 +71,7 @@ export function GiftCard({
   canMoveUp = true,
   canMoveDown = true,
   viewerClaim = null, // For other-member list: current viewer's claim on this gift, if any
+  otherClaims = [], // Guardian context: claims made by others, shown so parents can coordinate
 }) {
   const [imageUrl, setImageUrl] = useState(null)
 
@@ -91,6 +92,18 @@ export function GiftCard({
     return () => { active = false }
   }, [gift.link])
 
+  // Guardian-only: badges naming who is giving each gift, so parents avoid double-buying.
+  const claimBadges = otherClaims.length > 0 && (
+    <div className="gift-card__claim-badges">
+      {otherClaims.map((c, i) => (
+        <span key={i} className="gift-card__claim-badge">
+          <span className="gift-card__claim-dot" style={{ backgroundColor: c.claimerColor }} />
+          🎁 {c.claimerName} · {c.giftDate}
+        </span>
+      ))}
+    </div>
+  )
+
   // Compact received row (dimmed).
   if (isReceived) {
     return (
@@ -100,6 +113,7 @@ export function GiftCard({
           <div className="gift-card__received-label">
             {isOwner ? 'Marked as received' : 'Received'}
           </div>
+          {claimBadges}
         </div>
         <div className="gift-card__received-actions">
           {isOwner && (
@@ -161,6 +175,8 @@ export function GiftCard({
           {isRepeatable && <span className="gift-card__tag gift-card__tag--teal">Can give more than once</span>}
         </div>
 
+        {claimBadges}
+
         {/* Owner / admin-edit: action row */}
         {isOwner && (
           <div className="gift-card__actions">
@@ -215,8 +231,8 @@ export function GiftCard({
           </div>
         )}
 
-        {/* Viewer: unclaimed */}
-        {!isOwner && !viewerClaim && (
+        {/* Viewer: unclaimed and still available (a one-time gift taken by someone else can't be claimed) */}
+        {!isOwner && !viewerClaim && !(gift.onlyOnce && otherClaims.length > 0) && (
           <button className="gift-card__claim-btn" onClick={() => onClaim?.()}>
             I'll get this one
           </button>

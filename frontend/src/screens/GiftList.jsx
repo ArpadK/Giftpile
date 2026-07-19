@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, useLocation } from 'react-router-dom'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { TopBar } from '../components/TopBar'
 import { GiftCard } from '../components/GiftCard'
@@ -19,6 +19,7 @@ import './GiftList.css'
 export function GiftList() {
   const { userId } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const { currentUser } = useAuth()
 
   const [gifts, setGifts] = useState([])
@@ -37,22 +38,30 @@ export function GiftList() {
   const [claimingGift, setClaimingGift] = useState(null)
   const [claimEditMode, setClaimEditMode] = useState(false)
 
+  const [canManage, setCanManage] = useState(false)
+
   const targetUserId = userId ? Number(userId) : currentUser.id
   const isOwner = targetUserId === currentUser.id
   const isAdminEdit = location.pathname.startsWith('/admin/list/')
-  const canEdit = isOwner || isAdminEdit
+  const isManageEdit = location.pathname.startsWith('/manage/list/')
+  // Guardian edit mode is gated on the server-confirmed manage capability, not just the URL, so a
+  // non-manager who navigates straight to /manage/list/:id gets the ordinary (reveal) view.
+  const canEdit = isOwner || isAdminEdit || (isManageEdit && canManage)
 
   useEffect(() => {
     loadGifts()
   }, [targetUserId, isAdminEdit])
 
-  // Resolve the list owner's name for the header (when viewing someone else's list).
+  // Resolve the list owner's name + whether the current user manages this list (guardian).
   useEffect(() => {
-    if (isOwner) return
-    api.get('/api/users')
-      .then((users) => {
-        const owner = users.find(u => u.id === targetUserId)
-        if (owner) setOwnerName(owner.name)
+    if (isOwner) {
+      setCanManage(false)
+      return
+    }
+    api.get(`/api/users/${targetUserId}`)
+      .then((meta) => {
+        setOwnerName(meta.name)
+        setCanManage(!!meta.canManage)
       })
       .catch((err) => console.error('Failed to fetch owner:', err))
   }, [isOwner, targetUserId])
@@ -185,7 +194,13 @@ export function GiftList() {
 
   const screenTitle = isOwner ? 'My gift list' : (ownerName || 'Gift list')
   const screenSubtitle = isOwner ? null : 'Their gift ideas'
-  const backTo = isAdminEdit ? '/admin' : '/home'
+  const backTo = isAdminEdit ? '/admin' : isManageEdit ? `/list/${targetUserId}` : '/home'
+
+  // In guardian context the backend attaches every claim. In the regular view the viewer's own
+  // claim is shown via its own bar, so badges cover only the others'; in the edit view (no own-claim
+  // bar) badges cover every claim, including the guardian's own, so nothing is silently hidden.
+  const otherClaimsOf = (gift) => (gift.claims || []).filter(c => c.claimerUserId !== currentUser.id)
+  const claimsForCard = (gift) => (canEdit ? (gift.claims || []) : otherClaimsOf(gift))
 
   if (loading) {
     return (
@@ -204,6 +219,14 @@ export function GiftList() {
             <path d="M8 2C4.5 2 2 4.5 2 8s2.5 6 6 6 6-2.5 6-6-2.5-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" fill="currentColor"/>
           </svg>
           <span>Admin mode — you're editing someone else's list. You can't see who will receive which gift.</span>
+        </div>
+      )}
+      {isManageEdit && (
+        <div className="admin-edit-banner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2C4.5 2 2 4.5 2 8s2.5 6 6 6 6-2.5 6-6-2.5-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" fill="currentColor"/>
+          </svg>
+          <span>You're editing {ownerName || 'this'}'s list on their behalf. You can see who's giving what, so nobody buys the same thing twice.</span>
         </div>
       )}
       <TopBar
@@ -228,6 +251,18 @@ export function GiftList() {
       />
 
       <div className="gift-list__content">
+        {canManage && !canEdit && (
+          <button
+            className="gift-list__add-button"
+            onClick={() => navigate(`/manage/list/${targetUserId}`)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            Manage list
+          </button>
+        )}
+
         {canEdit && (
           <button className="gift-list__add-button" onClick={() => setShowAddModal(true)}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -261,6 +296,7 @@ export function GiftList() {
                 canMoveUp={idx > 0}
                 canMoveDown={idx < filteredActiveGifts.length - 1}
                 viewerClaim={canEdit ? null : gift.claim}
+                otherClaims={claimsForCard(gift)}
                 onEdit={() => setEditingGift(gift)}
                 onDelete={() => setDeletingGift(gift)}
                 onMarkReceived={() => handleMarkReceived(gift.id, true)}
@@ -271,7 +307,7 @@ export function GiftList() {
           </div>
         )}
 
-        {canEdit && receivedGifts.length > 0 && (
+        {(canEdit || canManage) && receivedGifts.length > 0 && (
           <div className="gift-list__received-section">
             <label className="gift-list__toggle-row">
               <input
@@ -294,6 +330,7 @@ export function GiftList() {
                     isOwner={canEdit}
                     isReceived={true}
                     viewerClaim={canEdit ? null : gift.claim}
+                    otherClaims={claimsForCard(gift)}
                     onMarkReceived={() => handleMarkReceived(gift.id, false)}
                     onDelete={() => setDeletingGift(gift)}
                     onClaim={() => openClaimModal(gift)}

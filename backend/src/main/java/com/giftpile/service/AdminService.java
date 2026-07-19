@@ -4,6 +4,7 @@ import com.giftpile.entity.User;
 import com.giftpile.exception.NotFoundException;
 import com.giftpile.repository.ClaimRepository;
 import com.giftpile.repository.GiftRepository;
+import com.giftpile.repository.KidManagerRepository;
 import com.giftpile.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +16,14 @@ public class AdminService {
   private final UserRepository userRepository;
   private final GiftRepository giftRepository;
   private final ClaimRepository claimRepository;
+  private final KidManagerRepository kidManagerRepository;
 
   public AdminService(UserRepository userRepository, GiftRepository giftRepository,
-                      ClaimRepository claimRepository) {
+                      ClaimRepository claimRepository, KidManagerRepository kidManagerRepository) {
     this.userRepository = userRepository;
     this.giftRepository = giftRepository;
     this.claimRepository = claimRepository;
+    this.kidManagerRepository = kidManagerRepository;
   }
 
   /**
@@ -75,6 +78,10 @@ public class AdminService {
 
     // Delete claims made by this user
     claimRepository.deleteByClaimerUserId(user.getId());
+
+    // Remove any parent/kid links on either side.
+    kidManagerRepository.deleteByKidUserId(user.getId());
+    kidManagerRepository.deleteByManagerUserId(user.getId());
 
     userRepository.delete(user);
   }

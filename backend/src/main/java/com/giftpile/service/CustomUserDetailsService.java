@@ -73,7 +73,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public boolean isEnabled() {
-      return true;
+      // Kids created without login capability can never establish a session.
+      return Boolean.TRUE.equals(user.getCanLogin());
     }
   }
 }

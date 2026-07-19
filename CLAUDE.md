@@ -8,6 +8,11 @@ Giftpile is a self-hostable family wishlist application. Family members keep gif
 secretly "claim" gifts to give. Core invariant: the owner of a list (and an admin editing it)
 never sees claim data, and gifts claimed by someone else are hidden from other viewers.
 
+Exception (kid users): a kid is a child account curated by assigned parent ("manager") users. A
+kid's *managers* — and only they — see the full list plus all claim data on that kid's list (the
+"guardian" context), so parents can coordinate gifts. The kid themselves (if login-enabled) still
+views their own list blind. See `GiftVisibilityService` / `ViewContext` and `GuardianService`.
+
 - **Backend** (`backend/`, Maven): Java 25, Spring Boot 4.1.0, Spring Data JPA + Hibernate 7,
   Spring Security 7 (session auth, BCrypt), Jsoup (link-preview scraping), Jackson 3
   (`tools.jackson` packages — not `com.fasterxml`).
